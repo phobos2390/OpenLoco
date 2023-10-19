@@ -78,11 +78,11 @@
                 },
                 "SDL2_DIR": {
                     "type": "PATH",
-                    "value": "/usr/lib/i386-linux-gnu/cmake/SDL2"
+                    "value": "/usr/lib64/cmake/SDL2"
                 },
                 "PNG_LIBRARY": {
                     "type": "FILEPATH",
-                    "value": "/usr/lib/i386-linux-gnu/libpng16.so"
+                    "value": "/usr/lib/libpng15.so"
                 },
                 "PNG_PNG_INCLUDE_DIR": {
                     "type": "PATH",
@@ -90,11 +90,11 @@
                 },
                 "ZLIB_LIBRARY": {
                     "type": "FILEPATH",
-                    "value": "/usr/lib/i386-linux-gnu/libz.so"
+                    "value": "/usr/lib/libz.so"
                 },
                 "GTEST_ROOT": {
                     "type": "FILEPATH",
-                    "value": "/usr/lib/i386-linux-gnu"
+                    "value": "/usr/lib64"
                 }
             }
         },
