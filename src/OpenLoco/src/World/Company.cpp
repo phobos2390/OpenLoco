@@ -1,5 +1,6 @@
 #include "Company.h"
 #include "CompanyManager.h"
+#include "Date.h"
 #include "Economy/Economy.h"
 #include "Entities/EntityManager.h"
 #include "GameCommands/Company/ChangeLoan.h"
@@ -34,6 +35,7 @@
 #include <array>
 #include <map>
 #include <unordered_set>
+#include <iostream>
 
 using namespace OpenLoco::Interop;
 
@@ -398,6 +400,20 @@ namespace OpenLoco
             {
                 totalProfit += trainProfit;
             }
+            int32_t sign = 1;
+            currency32_t trainProfitAbs = train.veh2->totalRecentProfit();
+            if (train.veh2->totalRecentProfit() < 0)
+            {
+                sign = -1;
+                trainProfitAbs = -trainProfitAbs;
+            }
+            std::cout << company.name << " Vehicle Performance Index: " 
+                      << train.veh2->totalRecentProfit() << "," 
+                      << Economy::getCurrencyMultiplicationFactor(0) << ","
+                      << sign * (Math::Vector::fastSquareRoot(trainProfitAbs * (750.0f) * (750.0f) /
+                         (2 * Economy::getCurrencyMultiplicationFactor(0)))) * (0.01f) << ","
+                      << getCurrentYear() << "-" << (uint16_t) getCurrentMonth() << "-" << (uint16_t) getCurrentDayOfMonth()
+                      << "\n";
         }
         totalProfit = std::max(0, totalProfit);
 
@@ -410,6 +426,11 @@ namespace OpenLoco
             profitFactor = partialProfitFactor / ecoFactor;
         }
         const auto cargoFactor = std::min<uint16_t>(500, Math::Vector::fastSquareRoot(company.cargoUnitsDistanceHistory[0] / 4));
+
+        std::cout << company.name << "Performance Index Components: " 
+                  << (profitFactor * (0.1f)) << "," << (cargoFactor * (0.1f)) << ","
+                  << getCurrentYear() << "-" << (uint16_t) getCurrentMonth() << "-" << (uint16_t) getCurrentDayOfMonth()
+                  << std::endl;
 
         return profitFactor + cargoFactor;
     }

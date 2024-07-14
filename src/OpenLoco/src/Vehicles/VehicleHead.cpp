@@ -45,6 +45,7 @@
 #include <cassert>
 #include <numeric>
 #include <optional>
+#include <iostream>
 
 using namespace OpenLoco::Interop;
 using namespace OpenLoco::Literals;
@@ -2699,6 +2700,13 @@ namespace OpenLoco::Vehicles
             company->cargoDelivered[cargo.type] = Math::Bound::add(company->cargoDelivered[cargo.type], cargo.qty);
 
             updateLastIncomeStats(cargo.type, cargo.qty, tilesDistance, cargo.numDays, cargoPayment);
+
+            std::cout << company->name <<  " Payment Statistics: " << (uint32_t) cargo.type << "," 
+                      << (uint32_t) cargo.qty << "," << (uint32_t) tilesDistance << "," 
+                      << (uint32_t) cargo.numDays << ","
+                      << (uint32_t) cargoPayment << "," << sourceStation->name << "-" << station->name << ","
+                      << getCurrentYear() << "-" << (uint32_t) getCurrentMonth() << "-" << (uint32_t) getCurrentDayOfMonth()
+                      << std::endl;
 
             var_58 += cargoPayment;
             station->var_3B1 = 0;
