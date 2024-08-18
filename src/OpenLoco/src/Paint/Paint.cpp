@@ -990,6 +990,7 @@ namespace OpenLoco::Paint
             case Ui::ViewportInteraction::InteractionItem::roadStation:
             case Ui::ViewportInteraction::InteractionItem::road:
             case Ui::ViewportInteraction::InteractionItem::roadExtra:
+            case Ui::ViewportInteraction::InteractionItem::bridge:
                 return true;
             default:
                 return false;
@@ -1001,6 +1002,17 @@ namespace OpenLoco::Paint
         switch (type)
         {
             case Ui::ViewportInteraction::InteractionItem::wall:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    static bool isTypeCullableBridge(const Ui::ViewportInteraction::InteractionItem type)
+    {
+        switch (type)
+        {
+            case Ui::ViewportInteraction::InteractionItem::bridge:
                 return true;
             default:
                 return false;
@@ -1069,6 +1081,13 @@ namespace OpenLoco::Paint
         if ((viewFlags & Ui::ViewportFlags::seeThroughBuildings) != Ui::ViewportFlags::none)
         {
             if (isTypeCullableBuilding(ps.type))
+            {
+                return true;
+            }
+        }
+        if ((viewFlags & Ui::ViewportFlags::seeThroughBridges) != Ui::ViewportFlags::none)
+        {
+            if (isTypeCullableBridge(ps.type))
             {
                 return true;
             }
