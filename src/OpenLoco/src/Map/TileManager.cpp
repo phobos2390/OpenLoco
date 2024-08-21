@@ -71,6 +71,27 @@ namespace OpenLoco::World::TileManager
         }
     }
 
+    // 0x0046908D
+    void removeSurfaceIndustryAtHeight(const Pos3& pos)
+    {
+        auto* elSurface = World::TileManager::get(pos).surface();
+        if (elSurface != nullptr)
+        {
+            // If underground
+            if (elSurface->baseHeight() > pos.z)
+            {
+                return;
+            }
+            // If quite high in the air
+            if (pos.z - elSurface->baseHeight() > 12 * World::kSmallZStep)
+            {
+                return;
+            }
+
+            elSurface->removeIndustry(pos);
+        }
+    }
+
     // 0x004BF476
     void allocateMapElements()
     {
@@ -1159,6 +1180,27 @@ namespace OpenLoco::World::TileManager
         });
     }
 
+    static void setTerrainStyleAsCleared(const Pos2 pos, SurfaceElement& surface)
+    {
+        if (surface.isIndustrial())
+        {
+            return;
+        }
+        if (surface.var_6_SLR5() > 0)
+        {
+            surface.setVar6SLR5(0);
+            surface.setSnowCoverage(0);
+
+            Ui::ViewportManager::invalidate(pos, surface.baseHeight(), surface.baseHeight() + 32, ZoomLevel::eighth);
+        }
+        if (surface.snowCoverage() > 0)
+        {
+            surface.setSnowCoverage(0);
+
+            Ui::ViewportManager::invalidate(pos, surface.baseHeight(), surface.baseHeight() + 32, ZoomLevel::eighth);
+        }
+    }
+
     // 0x004690FC
     void setTerrainStyleAsCleared(const Pos2& pos)
     {
@@ -1167,23 +1209,30 @@ namespace OpenLoco::World::TileManager
         {
             return;
         }
-        if (surface->isIndustrial())
+        setTerrainStyleAsCleared(pos, *surface);
+    }
+
+    // 0x00469174
+    void setTerrainStyleAsClearedAtHeight(const Pos3& pos)
+    {
+        auto* elSurface = World::TileManager::get(pos).surface();
+        if (elSurface == nullptr)
         {
             return;
         }
-        if (surface->var_6_SLR5() > 0)
-        {
-            surface->setVar6SLR5(0);
-            surface->setSnowCoverage(0);
 
-            Ui::ViewportManager::invalidate(pos, surface->baseHeight(), surface->baseHeight() + 32, ZoomLevel::eighth);
-        }
-        if (surface->snowCoverage() > 0)
+        // If underground
+        if (elSurface->baseHeight() > pos.z)
         {
-            surface->setSnowCoverage(0);
-
-            Ui::ViewportManager::invalidate(pos, surface->baseHeight(), surface->baseHeight() + 32, ZoomLevel::eighth);
+            return;
         }
+        // If quite high in the air
+        if (pos.z - elSurface->baseHeight() > 12 * World::kSmallZStep)
+        {
+            return;
+        }
+
+        setTerrainStyleAsCleared(pos, *elSurface);
     }
 
     // 0x00468651
@@ -1450,7 +1499,30 @@ namespace OpenLoco::World::TileManager
     // 0x0047AB9B
     void updateYearly()
     {
-        call(0x0047AB9B);
+        const auto isObjectNotTram = getGameState().roadObjectIdIsNotTram;
+        for (const auto& tilePos : getWorldRange())
+        {
+            auto tile = get(tilePos);
+            for (auto& el : tile)
+            {
+                auto* elRoad = el.as<RoadElement>();
+                if (elRoad == nullptr)
+                {
+                    continue;
+                }
+                if (elRoad->isAiAllocated() || elRoad->isGhost())
+                {
+                    continue;
+                }
+                // This is a much cheaper tram checker
+                // compared to getting the object
+                if (isObjectNotTram & (1U << elRoad->roadObjectId()))
+                {
+                    elRoad->setUnk7_80(elRoad->hasUnk7_40());
+                    elRoad->setUnk7_40(false);
+                }
+            }
+        }
     }
 
     void registerHooks()

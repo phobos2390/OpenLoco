@@ -295,7 +295,6 @@ namespace OpenLoco::Ui::Windows::BuildVehicle
     static void setTrackTypeTabs(Ui::Window* window);
     static void resetTrackTypeTabSelection(Ui::Window* window);
     static void setTopToolbarLastTrack(uint8_t trackType, bool isRoad);
-    static int16_t drawVehicleInline(Gfx::DrawingContext& drawingCtx, int16_t vehicleTypeIdx, uint8_t unk_1, CompanyId company, Ui::Point loc);
     static void drawTransportTypeTabs(Ui::Window* window, Gfx::DrawingContext& drawingCtx);
     static void drawTrackTypeTabs(Ui::Window* window, Gfx::DrawingContext& drawingCtx);
 
@@ -929,34 +928,17 @@ namespace OpenLoco::Ui::Windows::BuildVehicle
     static void onResize(Window& window)
     {
         window.flags |= WindowFlags::resizable;
-        auto minWidth = std::max<int16_t>(_numTrackTypeTabs * 31 + 195, 380);
-        window.minWidth = minWidth;
-        window.maxWidth = 520;
-        window.minHeight = 233;
-        window.maxHeight = 600;
-        if (window.width < minWidth)
-        {
-            window.width = minWidth;
-            window.invalidate();
-        }
 
-        if (window.height < window.minHeight)
-        {
-            window.height = window.minHeight;
-            window.invalidate();
-        }
+        auto minWidth = std::max<uint16_t>(_numTrackTypeTabs * 31 + 195, 380);
+        window.setSize({ minWidth, 233 }, { 520, 600 });
 
-        auto scrollPosition = window.scrollAreas[scrollIdx::vehicle_selection].contentHeight;
-        scrollPosition -= window.widgets[widx::scrollview_vehicle_selection].bottom;
-        scrollPosition += window.widgets[widx::scrollview_vehicle_selection].top;
-        if (scrollPosition < 0)
-        {
-            scrollPosition = 0;
-        }
+        auto& scrollArea = window.scrollAreas[scrollIdx::vehicle_selection];
+        auto& scrollWidget = window.widgets[widx::scrollview_vehicle_selection];
+        auto scrollPosition = std::max(0, scrollArea.contentHeight - scrollWidget.bottom + scrollWidget.top);
 
-        if (scrollPosition < window.scrollAreas[scrollIdx::vehicle_selection].contentOffsetY)
+        if (scrollPosition < scrollArea.contentOffsetY)
         {
-            window.scrollAreas[scrollIdx::vehicle_selection].contentOffsetY = scrollPosition;
+            scrollArea.contentOffsetY = scrollPosition;
             Ui::ScrollView::updateThumbs(&window, widx::scrollview_vehicle_selection);
         }
 
@@ -989,9 +971,9 @@ namespace OpenLoco::Ui::Windows::BuildVehicle
         window.frameNo++;
         window.callPrepareDraw();
 
-        WindowManager::invalidateWidget(WindowType::buildVehicle, window.number, window.currentTab + 4);
-        WindowManager::invalidateWidget(WindowType::buildVehicle, window.number, (window.currentSecondaryTab & 0xFF) + 10);
-        WindowManager::invalidateWidget(WindowType::buildVehicle, window.number, 19);
+        WindowManager::invalidateWidget(WindowType::buildVehicle, window.number, widx::tab_build_new_trains + window.currentTab);
+        WindowManager::invalidateWidget(WindowType::buildVehicle, window.number, widx::tab_track_type_0 + (window.currentSecondaryTab & 0xFF));
+        WindowManager::invalidateWidget(WindowType::buildVehicle, window.number, widx::scrollview_vehicle_preview);
 
         inputSession.cursorFrame++;
         if ((inputSession.cursorFrame % 16) == 0)
@@ -1489,7 +1471,7 @@ namespace OpenLoco::Ui::Windows::BuildVehicle
                         }
 
                         int16_t half = (window.rowHeight - 22) / 2;
-                        auto x = drawVehicleInline(drawingCtx, vehicleType, 0, CompanyManager::getControllingId(), { 0, static_cast<int16_t>(y + half) });
+                        auto x = drawVehicleInline(drawingCtx, vehicleType, CompanyManager::getControllingId(), { 0, static_cast<int16_t>(y + half) });
 
                         auto vehicleObj = ObjectManager::get<VehicleObject>(vehicleType);
                         FormatArguments args{};
@@ -1775,23 +1757,6 @@ namespace OpenLoco::Ui::Windows::BuildVehicle
 
             Widget::drawTab(window, drawingCtx, img, tab + widx::tab_track_type_0);
         }
-    }
-
-    // 0x4B7711
-    static int16_t drawVehicleInline(Gfx::DrawingContext& drawingCtx, int16_t vehicleTypeIdx, uint8_t unk_1, CompanyId company, Ui::Point loc)
-    {
-        const auto& rt = drawingCtx.currentRenderTarget();
-
-        registers regs;
-        regs.al = unk_1;
-        regs.ebx = enumValue(company);
-        regs.cx = loc.x;
-        regs.dx = loc.y;
-        regs.edi = X86Pointer(&rt);
-        regs.ebp = vehicleTypeIdx;
-        call(0x4B7711, regs);
-        // Returns right coordinate of the drawing
-        return regs.cx;
     }
 
     static bool keyUp(Window& w, uint32_t charCode, uint32_t keyCode)

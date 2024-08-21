@@ -20,6 +20,7 @@
 #include "Map/TrackElement.h"
 #include "Objects/BridgeObject.h"
 #include "Objects/ObjectManager.h"
+#include "Objects/RoadExtraObject.h"
 #include "Objects/RoadObject.h"
 #include "Objects/TrackExtraObject.h"
 #include "Objects/TrackObject.h"
@@ -320,8 +321,7 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
         activateSelectedConstructionWidgets();
     }
 
-    static loco_global<World::Track::TrackConnections, 0x0113609C> _113609C;
-    static loco_global<uint8_t[2], 0x0113601A> _113601A;
+    static loco_global<World::Track::LegacyTrackConnections, 0x0113609C> _113609C;
 
     // 0x004A012E
     static void removeTrack()
@@ -355,18 +355,16 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
             loc += World::Pos3{ World::kRotationOffset[_constructionRotation], 0 };
         }
         trackAndDirection |= (1 << 2) | (_constructionRotation & 0x3);
-        _113601A[0] = 0;
-        _113601A[1] = 0;
         _113609C->size = 0;
         auto trackEnd = World::Track::getTrackConnectionEnd(loc, trackAndDirection);
-        World::Track::getTrackConnections(trackEnd.first, trackEnd.second, _113609C, CompanyManager::getControllingId(), _trackType);
-
-        if (_113609C->size == 0)
+        auto tc = World::Track::getTrackConnections(trackEnd.nextPos, trackEnd.nextRotation, CompanyManager::getControllingId(), _trackType, 0, 0);
+        World::Track::toLegacyConnections(tc, _113609C); // Unsure if still needed
+        if (tc.connections.empty())
         {
             return;
         }
 
-        const auto trackAndDirection2 = (_113609C->data[_113609C->size - 1] & World::Track::AdditionalTaDFlags::basicTaDMask) ^ (1 << 2);
+        const auto trackAndDirection2 = (tc.connections.back() & World::Track::AdditionalTaDFlags::basicTaDMask) ^ (1 << 2);
         World::Pos3 loc2(_x, _y, _constructionZ);
         loc2 -= TrackData::getUnkTrack(trackAndDirection2).pos;
         if (trackAndDirection2 & (1 << 2))
@@ -417,37 +415,34 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
 
         World::Pos3 loc(_x, _y, _constructionZ);
         uint32_t trackAndDirection = (1 << 2) | (_constructionRotation & 0x3);
-        _113601A[0] = 0;
-        _113601A[1] = 0;
         _113609C->size = 0;
         const auto roadEnd = World::Track::getRoadConnectionEnd(loc, trackAndDirection);
-        World::Track::getRoadConnections(roadEnd.first, roadEnd.second, _113609C, CompanyManager::getControllingId(), _trackType & ~(1 << 7));
+        auto rc = World::Track::getRoadConnections(roadEnd.nextPos, roadEnd.nextRotation, CompanyManager::getControllingId(), _trackType & ~(1 << 7), 0, 0);
 
-        if (_113609C->size == 0)
+        if (rc.connections.empty())
         {
             return;
         }
 
-        for (size_t i = 0; i < _113609C->size; ++i)
+        for (auto& c : rc.connections)
         {
             // If trackId is zero
-            if ((_113609C->data[i] & 0x1F8) == 0)
+            if ((c & 0x1F8) == 0)
             {
-                std::swap(_113609C->data[0], _113609C->data[i]);
+                std::swap(c, rc.connections[0]);
             }
         }
 
         auto* roadObj = ObjectManager::get<RoadObject>(_trackType & ~(1 << 7));
         if (!roadObj->hasFlags(RoadObjectFlags::unk_02))
         {
-            _113609C->size = 1;
-            _113609C->data[1] = 0xFFFF;
+            rc.connections.resize(1);
         }
 
         uint16_t trackAndDirection2 = 0;
-        while (_113609C->size != 0)
+        for (auto c : rc.connections)
         {
-            trackAndDirection2 = (_113609C->pop_back() & World::Track::AdditionalTaDFlags::basicTaDMask) ^ (1 << 2);
+            trackAndDirection2 = (c & World::Track::AdditionalTaDFlags::basicTaDMask) ^ (1 << 2);
             World::Pos3 loc2(_x, _y, _constructionZ);
             loc2 -= TrackData::getUnkRoad(trackAndDirection2).pos;
             if (trackAndDirection2 & (1 << 2))
@@ -2626,19 +2621,108 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
     }
 
     // 0x00478F1F
-    void drawRoad(const World::Pos3& pos, uint16_t selectedMods, uint8_t trackType, uint8_t trackPieceId, uint8_t direction, Gfx::DrawingContext& drawingCtx)
+    void drawRoad(const World::Pos3& pos, uint16_t selectedMods, uint8_t roadType, uint8_t roadPieceId, uint8_t direction, Gfx::DrawingContext& drawingCtx)
     {
-        const auto& rt = drawingCtx.currentRenderTarget();
+        const ViewportFlags backupViewFlags = addr<0x00E3F0BC, ViewportFlags>(); // After all users of 0x00E3F0BC implemented this is not required
+        Paint::SessionOptions options{};
+        options.rotation = WindowManager::getCurrentRotation(); // This shouldn't be needed...
+        auto* session = Paint::allocateSession(drawingCtx.currentRenderTarget(), options);
 
-        static loco_global<const Gfx::RenderTarget*, 0x00E0C3E0> _dword_E0C3E0;
-        _dword_E0C3E0 = &rt;
-        registers regs;
-        regs.ax = pos.x;
-        regs.cx = pos.y;
-        regs.edi = selectedMods << 16 | pos.z;
-        regs.bh = direction;
-        regs.edx = trackPieceId << 8 | trackType;
-        call(0x00478F1F, regs);
+        const auto backupSelectionFlags = World::getMapSelectionFlags();
+        const World::Pos3 backupConstructionArrowPos = _constructionArrowPos;
+        const uint8_t backupConstructionArrowDir = _constructionArrowDirection;
+
+        World::resetMapSelectionFlag(World::MapSelectionFlags::enableConstructionArrow);
+        if (_byte_522095 & (1 << 1))
+        {
+            World::setMapSelectionFlags(World::MapSelectionFlags::enableConstructionArrow);
+            _constructionArrowPos = pos;
+            _constructionArrowDirection = direction;
+        }
+
+        const auto* roadObj = ObjectManager::get<RoadObject>(roadType);
+        // Remove any none compatible road mods
+        for (auto mod = 0; mod < 2; ++mod)
+        {
+            if (selectedMods & (1 << mod))
+            {
+                const auto* roadExtraObj = ObjectManager::get<RoadExtraObject>(roadObj->mods[mod]);
+                if ((roadExtraObj->roadPieces & TrackData::getRoadMiscData(roadPieceId).compatibleFlags) != TrackData::getRoadMiscData(roadPieceId).compatibleFlags)
+                {
+                    selectedMods &= ~(1 << mod);
+                }
+            }
+        }
+
+        const auto& roadPieces = TrackData::getRoadPiece(roadPieceId);
+        const auto roadDirection = direction & 3;
+
+        World::TileElement backupTileElements[5] = {};
+
+        World::SurfaceElement previewSideSurfaceTileElement{ 255, 255, 0xF, true };
+        previewSideSurfaceTileElement.setLastFlag(true);
+
+        for (const auto& roadPiece : roadPieces)
+        {
+            const auto pieceOffset = World::Pos3{ Math::Vector::rotate(World::Pos2{ roadPiece.x, roadPiece.y }, roadDirection), roadPiece.z };
+            const auto quarterTile = roadPiece.subTileClearance.rotate(roadDirection);
+            const auto trackPos = pos + pieceOffset;
+            const auto baseZ = trackPos.z / kSmallZStep;
+            const auto clearZ = baseZ + (roadPiece.clearZ + 32) / kSmallZStep;
+
+            const auto centreTileCoords = World::toTileSpace(trackPos);
+            const auto eastTileCoords = centreTileCoords + World::toTileSpace(World::kOffsets[1]);
+            const auto westTileCoords = centreTileCoords - World::toTileSpace(World::kOffsets[1]);
+            const auto northTileCoords = centreTileCoords + World::toTileSpace(World::kOffsets[3]);
+            const auto southTileCoords = centreTileCoords - World::toTileSpace(World::kOffsets[3]);
+
+            // Copy map elements which will be replaced with temporary ones containing road
+            backupTileElements[0] = *World::TileManager::get(centreTileCoords)[0];
+            backupTileElements[1] = *World::TileManager::get(eastTileCoords)[0];
+            backupTileElements[2] = *World::TileManager::get(westTileCoords)[0];
+            backupTileElements[3] = *World::TileManager::get(northTileCoords)[0];
+            backupTileElements[4] = *World::TileManager::get(southTileCoords)[0];
+
+            // Set the temporary road element
+            World::RoadElement newRoadEl(baseZ, clearZ);
+            newRoadEl.setRotation(roadDirection);
+            newRoadEl.setSequenceIndex(roadPiece.index);
+            newRoadEl.setRoadObjectId(roadType);
+            newRoadEl.setRoadId(roadPieceId);
+            newRoadEl.setMods(selectedMods);
+            newRoadEl.setOccupiedQuarter(quarterTile.getBaseQuarterOccupied());
+            newRoadEl.setOwner(CompanyManager::getControllingId());
+            newRoadEl.setLastFlag(true);
+
+            // Replace map elements with temp ones
+            *World::TileManager::get(centreTileCoords)[0] = *reinterpret_cast<World::TileElement*>(&newRoadEl);
+            *World::TileManager::get(eastTileCoords)[0] = *reinterpret_cast<World::TileElement*>(&previewSideSurfaceTileElement);
+            *World::TileManager::get(westTileCoords)[0] = *reinterpret_cast<World::TileElement*>(&previewSideSurfaceTileElement);
+            *World::TileManager::get(northTileCoords)[0] = *reinterpret_cast<World::TileElement*>(&previewSideSurfaceTileElement);
+            *World::TileManager::get(southTileCoords)[0] = *reinterpret_cast<World::TileElement*>(&previewSideSurfaceTileElement);
+
+            // Draw this map tile
+            Paint::paintTileElements(*session, trackPos);
+
+            // Restore map elements
+            *World::TileManager::get(centreTileCoords)[0] = backupTileElements[0];
+            *World::TileManager::get(eastTileCoords)[0] = backupTileElements[1];
+            *World::TileManager::get(westTileCoords)[0] = backupTileElements[2];
+            *World::TileManager::get(northTileCoords)[0] = backupTileElements[3];
+            *World::TileManager::get(southTileCoords)[0] = backupTileElements[4];
+        }
+
+        session->arrangeStructs();
+        session->drawStructs(drawingCtx);
+
+        // setMapSelectionFlags OR's flags so reset them to zero to set the backup
+        World::resetMapSelectionFlags();
+        World::setMapSelectionFlags(backupSelectionFlags);
+        _constructionArrowPos = backupConstructionArrowPos;
+        _constructionArrowDirection = backupConstructionArrowDir;
+
+        options.viewFlags = backupViewFlags;
+        Paint::allocateSession(drawingCtx.currentRenderTarget(), options); // After all users of 0x00E3F0BC implemented this is not required
     }
 
     // 0x0049D38A and 0x0049D16B

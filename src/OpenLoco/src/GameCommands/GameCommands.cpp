@@ -33,6 +33,7 @@
 #include "Objects/ObjectManager.h"
 #include "Objects/RoadObject.h"
 #include "Objects/TrackObject.h"
+#include "Random.h"
 #include "Road/CreateRoad.h"
 #include "Road/CreateRoadMod.h"
 #include "Road/CreateRoadStation.h"
@@ -123,7 +124,7 @@ namespace OpenLoco::GameCommands
     // clang-format off
     static constexpr GameCommandInfo kGameCommandDefinitions[84] = {
         { GameCommand::vehicleRearrange,             vehicleRearrange,          0x004AF1DF, true  },
-        { GameCommand::vehiclePlace,                 nullptr,                   0x004B01B6, true  },
+        { GameCommand::vehiclePlace,                 vehiclePlace,              0x004B01B6, true  },
         { GameCommand::vehiclePickup,                vehiclePickup,             0x004B0826, true  },
         { GameCommand::vehicleReverse,               vehicleReverse,            0x004ADAA8, true  },
         { GameCommand::vehiclePassSignal,            vehiclePassSignal,         0x004B0B50, true  },
@@ -182,7 +183,7 @@ namespace OpenLoco::GameCommands
         { GameCommand::removeAirport,                removeAirport,             0x00493559, true  },
         { GameCommand::vehiclePlaceAir,              vehiclePlaceAir,           0x004267BE, true  },
         { GameCommand::vehiclePickupAir,             vehiclePickupAir,          0x00426B29, true  },
-        { GameCommand::createPort,                   nullptr,                   0x00493AA7, true  },
+        { GameCommand::createPort,                   createPort,                0x00493AA7, true  },
         { GameCommand::removePort,                   removePort,                0x00494570, true  },
         { GameCommand::vehiclePlaceWater,            vehiclePlaceWater,         0x0042773C, true  },
         { GameCommand::vehiclePickupWater,           vehiclePickupWater,        0x004279CC, true  },
@@ -383,10 +384,10 @@ namespace OpenLoco::GameCommands
                     && (_gameCommandFlags & Flags::ghost) == 0
                     && ebx != 0)
                 {
-                    registers regs2;
-                    regs2.ebp = ebx;
-                    call(0x0046DD06, regs2);
-                    ebx = regs2.ebp;
+                    if (!CompanyManager::ensureCompanyFunding(getUpdatingCompanyId(), ebx))
+                    {
+                        ebx = GameCommands::FAILURE;
+                    }
                 }
             }
         }
@@ -479,7 +480,7 @@ namespace OpenLoco::GameCommands
                 {
                     auto& trackElement = tile->get<TrackElement>();
 
-                    TrackObject* pObject = ObjectManager::get<TrackObject>(trackElement.trackObjectId());
+                    const TrackObject* pObject = ObjectManager::get<TrackObject>(trackElement.trackObjectId());
                     if (pObject == nullptr)
                         break;
 
@@ -494,7 +495,7 @@ namespace OpenLoco::GameCommands
                 {
                     auto& roadElement = tile->get<RoadElement>();
 
-                    RoadObject* pObject = ObjectManager::get<RoadObject>(roadElement.roadObjectId());
+                    const RoadObject* pObject = ObjectManager::get<RoadObject>(roadElement.roadObjectId());
                     if (pObject == nullptr)
                         break;
 
@@ -509,7 +510,7 @@ namespace OpenLoco::GameCommands
                 {
                     auto& stationElement = tile->get<StationElement>();
 
-                    Station* pStation = StationManager::get(stationElement.stationId());
+                    const Station* pStation = StationManager::get(stationElement.stationId());
                     if (pStation == nullptr)
                         break;
 
@@ -608,5 +609,13 @@ namespace OpenLoco::GameCommands
     uint8_t getCommandNestLevel()
     {
         return _gameCommandNestLevel;
+    }
+
+    // TODO: Maybe move this somewhere else used by multiple game commands
+    // 0x0048B013
+    void playConstructionPlacementSound(World::Pos3 pos)
+    {
+        const auto frequency = gPrng1().randNext(17955, 26146);
+        Audio::playSound(Audio::SoundId::construct, pos, 0, frequency);
     }
 }

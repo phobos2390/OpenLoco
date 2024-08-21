@@ -43,6 +43,7 @@ else ()
 endif()
 
 find_package(PNG REQUIRED)
+find_package(ZLIB REQUIRED) # Dependency of PNG not really required but vcpkg not mapping static png dependencies
 if (NOT APPLE AND NOT MSVC)
     find_package(OpenAL CONFIG)
     if (OpenAL_FOUND)
@@ -84,7 +85,7 @@ if ( NOT sfl_FOUND )
     FetchContent_Declare(
         sfl
         GIT_REPOSITORY      https://github.com/slavenf/sfl-library
-        GIT_TAG             1.4.0
+        GIT_TAG             1.7.0
         GIT_SHALLOW         ON
     )
     FetchContent_MakeAvailable(sfl)

@@ -11,16 +11,14 @@
 #include "Ui/Widget.h"
 #include "Ui/WindowManager.h"
 #include <OpenLoco/Engine/Input/ShortcutManager.h>
-#include <OpenLoco/Interop/Interop.hpp>
 #include <SDL2/SDL.h>
 #include <unordered_map>
 
-using namespace OpenLoco::Interop;
 using namespace OpenLoco::Input;
 
 namespace OpenLoco::Ui::Windows::KeyboardShortcuts
 {
-    static const int kRowHeight = 10; // CJK: 13
+    static constexpr int kRowHeight = 10; // CJK: 13
 
     static constexpr Widget _widgets[] = {
         makeWidget({ 0, 0 }, { 360, 238 }, WidgetType::frame, WindowColour::primary),

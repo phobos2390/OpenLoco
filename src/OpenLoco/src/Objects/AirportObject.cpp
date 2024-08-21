@@ -50,26 +50,26 @@ namespace OpenLoco
             remainingData = remainingData.subspan(strRes.tableLength);
         }
 
-        var_14 = reinterpret_cast<const uint8_t*>(remainingData.data());
+        buildingPartHeights = reinterpret_cast<const uint8_t*>(remainingData.data());
         remainingData = remainingData.subspan(numSpriteSets * sizeof(uint8_t));
-        var_18 = reinterpret_cast<const uint16_t*>(remainingData.data());
+        buildingPartAnimations = reinterpret_cast<const BuildingPartAnimation*>(remainingData.data());
         remainingData = remainingData.subspan(numSpriteSets * sizeof(uint16_t));
 
         for (auto i = 0; i < numTiles; ++i)
         {
-            var_1C[i] = reinterpret_cast<const uint8_t*>(remainingData.data());
-            auto* ptr = var_1C[i];
+            buildingVariationParts[i] = reinterpret_cast<const uint8_t*>(remainingData.data());
+            auto* ptr = buildingVariationParts[i];
             while (*ptr++ != 0xFF)
                 ;
-            remainingData = remainingData.subspan(ptr - var_1C[i]);
+            remainingData = remainingData.subspan(ptr - buildingVariationParts[i]);
         }
 
-        buildingParts = reinterpret_cast<const AirportBuilding*>(remainingData.data());
+        buildingPositions = reinterpret_cast<const AirportBuilding*>(remainingData.data());
         auto* ptr = reinterpret_cast<const uint8_t*>(remainingData.data());
         while (*ptr != 0xFF)
             ptr += 4;
         ptr++;
-        remainingData = remainingData.subspan(ptr - reinterpret_cast<const uint8_t*>(buildingParts));
+        remainingData = remainingData.subspan(ptr - reinterpret_cast<const uint8_t*>(buildingPositions));
 
         movementNodes = reinterpret_cast<const MovementNode*>(remainingData.data());
         remainingData = remainingData.subspan(numMovementNodes * sizeof(MovementNode));
@@ -81,11 +81,11 @@ namespace OpenLoco
         assert(remainingData.size() == imgRes.tableLength);
 
         auto nextImage = image + 1;
-        if (allowedPlaneTypes & (1 << 0))
+        if (hasFlags(AirportObjectFlags::hasShadows))
         {
             nextImage += numTiles * 4;
         }
-        var_0C = nextImage;
+        buildingImage = nextImage;
     }
 
     // 0x00490D66
@@ -93,11 +93,11 @@ namespace OpenLoco
     {
         name = 0;
         image = 0;
-        var_0C = 0;
+        buildingImage = 0;
 
-        std::fill(std::begin(var_1C), std::end(var_1C), nullptr);
+        std::fill(std::begin(buildingVariationParts), std::end(buildingVariationParts), nullptr);
 
-        buildingParts = nullptr;
+        buildingPositions = nullptr;
 
         movementNodes = nullptr;
         movementEdges = nullptr;
@@ -126,14 +126,24 @@ namespace OpenLoco
         return std::make_pair(minPos, maxPos);
     }
 
-    std::span<const AirportBuilding> AirportObject::getBuildingParts() const
+    std::span<const AirportBuilding> AirportObject::getBuildingPositions() const
     {
-        const auto* firstPartPtr = buildingParts;
-        auto* endPartPtr = firstPartPtr;
+        const auto* firstBuildingPtr = buildingPositions;
+        auto* endBuildingPtr = firstBuildingPtr;
 
-        while (endPartPtr->index != 0xFF)
-            endPartPtr++;
+        while (endBuildingPtr->index != 0xFF)
+            endBuildingPtr++;
 
-        return std::span<const AirportBuilding>(firstPartPtr, endPartPtr);
+        return std::span<const AirportBuilding>(firstBuildingPtr, endBuildingPtr);
+    }
+
+    std::span<const std::uint8_t> AirportObject::getBuildingParts(const uint8_t buildingType) const
+    {
+        const auto* partsPointer = buildingVariationParts[buildingType];
+        auto* end = partsPointer;
+        while (*end != 0xFF)
+            end++;
+
+        return std::span<const std::uint8_t>(partsPointer, end);
     }
 }

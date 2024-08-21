@@ -19,7 +19,6 @@
 #include "Objects/RoadObject.h"
 #include "Objects/TrackExtraObject.h"
 #include "Objects/TrackObject.h"
-#include "Random.h"
 #include "World/CompanyManager.h"
 #include "World/StationManager.h"
 #include <OpenLoco/Core/Numerics.hpp>
@@ -33,14 +32,6 @@ namespace OpenLoco::GameCommands
     static loco_global<uint8_t, 0x01136073> _byte_1136073;
     static loco_global<World::MicroZ, 0x01136074> _byte_1136074;
     static loco_global<uint8_t, 0x01136075> _byte_1136075; // bridgeType of any overlapping track
-
-    // TODO: Move this somewhere else used by multiple game commands
-    // 0x0048B013
-    static void playPlacementSound(World::Pos3 pos)
-    {
-        const auto frequency = gPrng1().randNext(17955, 26146);
-        Audio::playSound(Audio::SoundId::construct, pos, 0, frequency);
-    }
 
     static bool isBridgeRequired(const World::SmallZ baseZ, const World::SurfaceElement& elSurface, const World::TrackData::PreviewTrack& piece, const uint8_t unk)
     {
@@ -338,26 +329,6 @@ namespace OpenLoco::GameCommands
         return World::TileClearance::ClearFuncResult::collision;
     }
 
-    // 0x0046908D
-    static void sub_46908D(const World::Pos3 pos)
-    {
-        registers regs{};
-        regs.ax = pos.x;
-        regs.cx = pos.y;
-        regs.dx = pos.z;
-        call(0x0046908D, regs);
-    }
-
-    // 0x00469174
-    static void sub_469174(const World::Pos3 pos)
-    {
-        registers regs{};
-        regs.ax = pos.x;
-        regs.cx = pos.y;
-        regs.dx = pos.z;
-        call(0x00469174, regs);
-    }
-
     // 0x0049BB98
     static uint32_t createTrack(const TrackPlacementArgs& args, uint8_t flags)
     {
@@ -559,8 +530,8 @@ namespace OpenLoco::GameCommands
             }
             if (!(flags & (Flags::ghost | Flags::aiAllocated)))
             {
-                sub_46908D(trackLoc);
-                sub_469174(trackLoc);
+                World::TileManager::removeSurfaceIndustryAtHeight(trackLoc);
+                World::TileManager::setTerrainStyleAsClearedAtHeight(trackLoc);
             }
 
             auto* newElTrack = World::TileManager::insertElement<World::TrackElement>(trackLoc, baseZ, quarterTile.getBaseQuarterOccupied());
@@ -616,7 +587,7 @@ namespace OpenLoco::GameCommands
 
         if ((flags & Flags::apply) && !(flags & (Flags::aiAllocated | Flags::ghost)))
         {
-            playPlacementSound(getPosition());
+            playConstructionPlacementSound(getPosition());
         }
         return totalCost;
     }

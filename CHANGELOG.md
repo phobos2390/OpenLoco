@@ -1,3 +1,27 @@
+24.08+ (???)
+------------------------------------------------------------------------
+
+24.08 (2024-08-19)
+------------------------------------------------------------------------
+- Change: [#2569] Removing overhead or third rail track mods now takes selected section mode into account.
+- Change: [#2578] Scrollbars are now hidden if the scrollable widget is not actually overflowing.
+- Change: [#2579] Error messages are now easier to read.
+- Fix: [#1668] Crash when setting preferred currency to an object that no longer exists. (original bug)
+- Fix: [#2520] Crash when loading certain saves from the title screen.
+- Fix: [#2555] Crash when setting preferred company to an object that no longer exists.
+- Fix: [#2556] Incorrect height markers on surfaces.
+- Fix: [#2557] Unable to change the fullscreen resolution.
+- Fix: [#2574] Left turn tunnels do not draw.
+- Fix: [#2576] Incoming message sound effects option is not saved properly.
+- Fix: [#2578] Scrollbars do not always update correctly when a window is being resized.
+
+24.07 (2024-07-23)
+------------------------------------------------------------------------
+- Fix: [#2514] Crash when running OpenLoco with older VC++ runtime files.
+- Fix: [#2523] Autosaves are generated monthly regardless of frequency setting.
+- Fix: [#2527] Ghost vehicles stay placed down when placement is interrupted.
+- Fix: [#2529] Overhead preview image is empty.
+
 24.06 (2024-06-28)
 ------------------------------------------------------------------------
 - Change: [#2473] Progress bars no longer pop up for autosaves.

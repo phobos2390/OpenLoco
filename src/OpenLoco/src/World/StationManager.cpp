@@ -22,6 +22,7 @@
 #include "Vehicles/OrderManager.h"
 #include "Vehicles/VehicleManager.h"
 #include <OpenLoco/Interop/Interop.hpp>
+#include <OpenLoco/Math/Vector.hpp>
 
 #include <bitset>
 #include <numeric>
@@ -346,7 +347,7 @@ namespace OpenLoco::StationManager
         }
 
         // Additional names to try
-        static const std::pair<const StationName, const StringId> additionalNamePairs[] = {
+        static constexpr std::pair<const StationName, const StringId> additionalNamePairs[] = {
             { StationName::townTransfer, StringIds::station_town_transfer },
             { StationName::townHalt, StringIds::station_town_halt },
             { StationName::townAnnexe, StringIds::station_town_annexe },
@@ -364,7 +365,7 @@ namespace OpenLoco::StationManager
         }
 
         // Ordinal names to try
-        static const std::pair<const StationName, const StringId> ordinalNamePairs[] = {
+        static constexpr std::pair<const StationName, const StringId> ordinalNamePairs[] = {
             { StationName::townOrd1, StringIds::station_town_ord_1 },
             { StationName::townOrd2, StringIds::station_town_ord_2 },
             { StationName::townOrd3, StringIds::station_town_ord_3 },
@@ -600,11 +601,20 @@ namespace OpenLoco::StationManager
     }
 
     // 0x0048F850
-    static void removeStationFromCargoStats(const StationId stationId)
+    static void removeStationFromCargoStats(const StationId removedStationId)
     {
-        registers regs;
-        regs.ebx = enumValue(stationId);
-        call(0x0048F850, regs);
+        for (auto& station : stations())
+        {
+            for (auto& stats : station.cargoStats)
+            {
+                if (stats.origin == removedStationId)
+                {
+                    stats.origin = StationId::null;
+                    stats.quantity = 0;
+                    Ui::WindowManager::invalidate(Ui::WindowType::station, enumValue(station.id()));
+                }
+            }
+        }
     }
 
     // 0x0048F7D1
@@ -634,6 +644,79 @@ namespace OpenLoco::StationManager
         MessageManager::removeAllSubjectRefs(enumValue(stationId), MessageItemArgumentType::station);
         StringManager::emptyUserString(station->name);
         station->name = StringIds::null;
+    }
+
+    // 0x004901B0
+    NearbyStation findNearbyStation(World::Pos3 pos, CompanyId companyId)
+    {
+        const auto tilePosA = World::toTileSpace(pos) - World::TilePos2(2, 2);
+        const auto tilePosB = World::toTileSpace(pos) + World::TilePos2(2, 2);
+
+        auto minDistanceStation = StationId::null;
+        auto minDistance = std::numeric_limits<int16_t>::max();
+        bool isPhysicallyAttached = false;
+        for (const auto tilePos : World::getClampedRange(tilePosA, tilePosB))
+        {
+            const auto tile = World::TileManager::get(tilePos);
+            for (auto& el : tile)
+            {
+                auto* elStation = el.as<World::StationElement>();
+                if (elStation == nullptr)
+                {
+                    continue;
+                }
+                if (elStation->isGhost())
+                {
+                    continue;
+                }
+                auto* station = StationManager::get(elStation->stationId());
+                if (station->owner != companyId)
+                {
+                    continue;
+                }
+
+                const auto distance = Math::Vector::chebyshevDistance2D(World::toWorldSpace(tilePos), pos);
+                if (distance < minDistance)
+                {
+                    auto distDiffZ = std::abs(elStation->baseHeight() - pos.z);
+                    if (distDiffZ > 64)
+                    {
+                        continue;
+                    }
+                    minDistance = distance + distDiffZ / 2;
+                    if (minDistance <= 64)
+                    {
+                        isPhysicallyAttached = true;
+                    }
+                    minDistanceStation = elStation->stationId();
+                }
+            }
+        }
+
+        for (auto& station : StationManager::stations())
+        {
+            if (station.owner != companyId)
+            {
+                continue;
+            }
+            const auto distance = Math::Vector::chebyshevDistance2D(World::Pos2{ station.x, station.y }, pos);
+
+            auto distDiffZ = std::abs(station.z - pos.z);
+            if (distDiffZ > 64)
+            {
+                continue;
+            }
+            if (distance > 64)
+            {
+                continue;
+            }
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                minDistanceStation = station.id();
+            }
+        }
+        return NearbyStation{ minDistanceStation, isPhysicallyAttached };
     }
 
     void registerHooks()

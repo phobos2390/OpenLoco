@@ -87,6 +87,7 @@ set(OLOCO_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/GameCommands/Company/RenameCompanyName.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/GameCommands/Company/RenameCompanyOwner.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/GameCommands/Company/UpdateOwnerStatus.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/GameCommands/Docks/CreatePort.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/GameCommands/Docks/RemovePort.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/GameCommands/GameCommands.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/GameCommands/General/LoadSaveQuit.cpp"
@@ -133,6 +134,7 @@ set(OLOCO_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/GameCommands/Vehicles/VehiclePickup.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/GameCommands/Vehicles/VehiclePickupAir.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/GameCommands/Vehicles/VehiclePickupWater.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/GameCommands/Vehicles/VehiclePlace.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/GameCommands/Vehicles/VehiclePlaceAir.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/GameCommands/Vehicles/VehiclePlaceWater.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/GameCommands/Vehicles/VehicleRearrange.cpp"
@@ -180,6 +182,8 @@ set(OLOCO_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Map/MapGenerator/SimplexTerrainGenerator.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Map/MapSelection.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Map/RoadElement.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Map/SignalElement.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Map/StationElement.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Map/SurfaceData.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Map/SurfaceElement.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Map/Tile.cpp"
@@ -241,16 +245,21 @@ set(OLOCO_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Objects/WaterObject.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/OpenLoco.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/Paint.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintAirport.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintBuilding.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintDocks.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintEffectEntity.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintEntity.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintIndustry.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintRoad.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintRoadStation.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintSignal.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintStation.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintSurface.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintTile.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintTileDecorations.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintTrack.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintTrainStation.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintTree.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintVehicle.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintWall.cpp"
@@ -589,10 +598,14 @@ set(OLOCO_HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Objects/WaterObject.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/OpenLoco.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/Paint.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintAirport.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintBuilding.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintDocks.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintEffectEntity.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintEntity.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintIndustry.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintRoad.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintRoadStation.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintSignal.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintStation.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintSurface.h"
@@ -601,6 +614,7 @@ set(OLOCO_HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintTrack.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintTrackAdditionsData.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintTrackData.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintTrainStation.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintTree.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintVehicle.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Paint/PaintWall.h"
@@ -734,6 +748,10 @@ elseif (MSVC)
             _USE_MATH_DEFINES
             SDL_MAIN_HANDLED
             _WINSOCK_DEPRECATED_NO_WARNINGS)
+
+    target_link_libraries(OpenLoco
+        ZLIB::ZLIB) # This shouldn't be required but vcpkg seems to not map the dependencies correctly for png static
+
 else ()
     target_compile_definitions(OpenLoco
         PRIVATE

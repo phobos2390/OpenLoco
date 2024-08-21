@@ -391,30 +391,6 @@ namespace OpenLoco::Ui::Windows::Construction
         return window;
     }
 
-    // 0x004A1303
-    void setToTrackExtra(const Window& main, TrackElement* track, const uint8_t bh, const Pos2 pos)
-    {
-        registers regs{};
-        regs.esi = X86Pointer(&main);
-        regs.edx = X86Pointer(track);
-        regs.bh = bh;
-        regs.ax = pos.x;
-        regs.cx = pos.y;
-        call(0x004A1303, regs);
-    }
-
-    // 0x004A13C1
-    void setToRoadExtra(const Window& main, RoadElement* road, const uint8_t bh, const Pos2 pos)
-    {
-        registers regs{};
-        regs.esi = X86Pointer(&main);
-        regs.edx = X86Pointer(road);
-        regs.bh = bh;
-        regs.ax = pos.x;
-        regs.cx = pos.y;
-        call(0x004A13C1, regs);
-    }
-
     // 0x004A3B0D
     Window* openWithFlags(const uint32_t flags)
     {
@@ -569,6 +545,18 @@ namespace OpenLoco::Ui::Windows::Construction
     uint16_t getLastSelectedMods()
     {
         return _lastSelectedMods;
+    }
+
+    uint16_t getLastSelectedTrackModSection()
+    {
+        if (WindowManager::find(WindowType::construction) != nullptr)
+        {
+            return _lastSelectedTrackModSection;
+        }
+        else
+        {
+            return 0;
+        }
     }
 
     namespace Common
@@ -1232,13 +1220,13 @@ namespace OpenLoco::Ui::Windows::Construction
             for (uint8_t i = 0; i < ObjectManager::getMaxObjects(ObjectType::roadStation); i++)
             {
                 uint8_t numCompatible;
-                uint8_t* mods;
+                const uint8_t* mods;
                 uint16_t designedYear;
                 uint16_t obsoleteYear;
 
                 if (transportMode == TransportMode::road)
                 {
-                    auto roadStationObj = ObjectManager::get<RoadStationObject>(i);
+                    const auto* roadStationObj = ObjectManager::get<RoadStationObject>(i);
 
                     if (roadStationObj == nullptr)
                         continue;
@@ -1338,7 +1326,7 @@ namespace OpenLoco::Ui::Windows::Construction
                     continue;
 
                 uint8_t numCompatible;
-                uint8_t* mods;
+                const uint8_t* mods;
 
                 if (transportMode == TransportMode::road)
                 {

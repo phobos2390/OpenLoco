@@ -337,6 +337,20 @@ namespace OpenLoco
         company->observationTimeout = 5;
     }
 
+    // 0x004312D2
+    void updateYearly(Company& company)
+    {
+        for (auto type = 0U; type < ExpenditureType::Count; ++type)
+        {
+            currency32_t lastExpend = 0;
+            for (auto i = 0U; i < kExpenditureHistoryCapacity; ++i)
+            {
+                std::swap(lastExpend, company.expenditures[i][type]);
+            }
+        }
+        company.numExpenditureYears = std::min<uint8_t>(company.numExpenditureYears + 1, kExpenditureHistoryCapacity);
+    }
+
     bool Company::isVehicleIndexUnlocked(const uint8_t vehicleIndex) const
     {
         return unlockedVehicles[vehicleIndex];
@@ -394,8 +408,9 @@ namespace OpenLoco
             }
 
             Vehicles::Vehicle train(*head);
-            // Unsure why /2
-            currency32_t trainProfit = train.veh2->totalRecentProfit() / 2;
+            // Unsure why >> 1, /2
+            // Note: To match vanilla using >> 1. Use /2 when diverging allowed.
+            currency32_t trainProfit = train.veh2->totalRecentProfit() >> 1;
             if (static_cast<int64_t>(totalProfit) + trainProfit < std::numeric_limits<currency32_t>::max())
             {
                 totalProfit += trainProfit;
@@ -518,6 +533,9 @@ namespace OpenLoco
 
         if (historySize >= 2)
         {
+            // Note: At this point cargoUnitsDeliveredHistory already has historySize + 1
+            // valid entries inside of it. This is why it is safe to access cargoUnitsDeliveredHistory[2]
+            // after the if (historySize >= 2)
             if (cargoUnitsDeliveredHistory[0] < cargoUnitsDeliveredHistory[1]
                 && cargoUnitsDeliveredHistory[1] < cargoUnitsDeliveredHistory[2])
             {
@@ -577,9 +595,9 @@ namespace OpenLoco
         if (!CompanyManager::isPlayerCompany(id()))
         {
             // Auto pay loan
-            while (currentLoan > 1000)
+            while (currentLoan >= 1000)
             {
-                if (cash <= 1000)
+                if (cash < 1000)
                 {
                     break;
                 }
@@ -590,15 +608,9 @@ namespace OpenLoco
 
         const auto monthlyInterest = (currentLoan * getGameState().loanInterestRate) / 1200;
 
-        const auto prevUpdateCompany = GameCommands::getUpdatingCompanyId();
-        GameCommands::setUpdatingCompanyId(id());
-        registers regs2;
-        regs2.ebp = monthlyInterest + 1;
-        call(0x0046DD06, regs2);
-
+        CompanyManager::ensureCompanyFunding(id(), monthlyInterest + 1);
         CompanyManager::applyPaymentToCompany(id(), monthlyInterest, ExpenditureType::LoanInterest);
 
-        GameCommands::setUpdatingCompanyId(prevUpdateCompany);
         if (cash <= 0)
         {
             companyEmotionEvent(id(), Emotion::worried);

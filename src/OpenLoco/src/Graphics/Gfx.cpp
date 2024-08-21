@@ -166,7 +166,7 @@ namespace OpenLoco::Gfx
     }
 
     // 0x004949BC
-    void initialiseCharacterWidths()
+    static void initialiseCharacterWidths()
     {
         struct FontEntry
         {
@@ -205,10 +205,15 @@ namespace OpenLoco::Gfx
         // Vanilla setup scrolling text related globals here (unused)
     }
 
-    // 0x00452336
-    void initialiseNoiseMaskMap()
+    void initialise()
     {
-        call(0x00452336);
+        initialiseCharacterWidths();
+
+        loadDefaultPalette();
+
+        auto& drawingEngine = getDrawingEngine();
+        auto& drawingCtx = drawingEngine.getDrawingContext();
+        drawingCtx.clearSingle(PaletteIndex::index_0A);
     }
 
     // 0x004CD406
@@ -274,11 +279,6 @@ namespace OpenLoco::Gfx
         else
         {
             Ui::processMessages();
-        }
-
-        if (addr<0x005252AC, uint32_t>() != 0)
-        {
-            //            sub_4058F5();
         }
 
         std::memcpy(_byte_112CC04, backup1, 512);

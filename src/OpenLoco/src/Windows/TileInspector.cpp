@@ -39,10 +39,8 @@
 #include "World/CompanyManager.h"
 #include "World/Industry.h"
 #include "World/Station.h"
-#include <OpenLoco/Interop/Interop.hpp>
 #include <map>
 
-using namespace OpenLoco::Interop;
 using namespace OpenLoco::World;
 
 namespace OpenLoco::Ui::Windows::TileInspector
@@ -249,7 +247,7 @@ namespace OpenLoco::Ui::Windows::TileInspector
             {
                 auto& signal = element.get<SignalElement>();
 
-                TrainSignalObject* object = nullptr;
+                const TrainSignalObject* object = nullptr;
                 if (signal.getLeft().hasSignal())
                     object = ObjectManager::get<TrainSignalObject>(signal.getLeft().signalObjectId());
                 else if (signal.getRight().hasSignal())

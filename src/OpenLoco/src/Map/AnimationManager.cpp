@@ -5,6 +5,9 @@
 #include "GameState.h"
 #include "GameStateFlags.h"
 #include "IndustryElement.h"
+#include "RoadElement.h"
+#include "SignalElement.h"
+#include "StationElement.h"
 #include <OpenLoco/Interop/Interop.hpp>
 #include <array>
 
@@ -51,18 +54,14 @@ namespace OpenLoco::World::AnimationManager
 
     static bool callUpdateFunction(Animation& anim)
     {
-        registers regs;
-        regs.ax = anim.pos.x;
-        regs.cx = anim.pos.y;
-        regs.dl = anim.baseZ;
         switch (anim.type)
         {
             case 0:
-                return call(0x0048950F, regs) & X86_FLAG_CARRY;
+                return updateSignalAnimation(anim);
             case 1:
-                return call(0x00479413, regs) & X86_FLAG_CARRY;
+                return updateLevelCrossingAnimation(anim);
             case 2:
-                return call(0x004BD528, regs) & X86_FLAG_CARRY;
+                return false;
             case 3:
                 return updateIndustryAnimation1(anim);
             case 4:
@@ -72,9 +71,9 @@ namespace OpenLoco::World::AnimationManager
             case 6:
                 return updateBuildingAnimation2(anim);
             case 7:
-                return call(0x004939ED, regs) & X86_FLAG_CARRY;
+                return updateAirportStationAnimation(anim);
             case 8:
-                return call(0x004944B6, regs) & X86_FLAG_CARRY;
+                return updateDockStationAnimation(anim);
         }
         assert(false);
         return false;

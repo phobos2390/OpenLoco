@@ -48,17 +48,17 @@ namespace OpenLoco
         name = strRes.str;
         remainingData = remainingData.subspan(strRes.tableLength);
 
-        // Load unk?
-        var_14 = reinterpret_cast<const uint8_t*>(remainingData.data());
-        remainingData = remainingData.subspan(numAux01);
+        // Load part heights
+        partHeights = reinterpret_cast<const uint8_t*>(remainingData.data());
+        remainingData = remainingData.subspan(numBuildingParts);
 
-        var_18 = reinterpret_cast<const uint16_t*>(remainingData.data());
-        remainingData = remainingData.subspan(numAux01 * sizeof(uint16_t));
+        buildingPartAnimations = reinterpret_cast<const BuildingPartAnimation*>(remainingData.data());
+        remainingData = remainingData.subspan(numBuildingParts * sizeof(uint16_t));
 
-        // Load unk2?
-        for (auto i = 0U; i < numAux02Ent; ++i)
+        // Load building variation parts
+        for (auto i = 0U; i < numBuildingVariations; ++i)
         {
-            var_1C[i] = reinterpret_cast<const uint8_t*>(remainingData.data());
+            buildingVariationParts[i] = reinterpret_cast<const uint8_t*>(remainingData.data());
             while (*remainingData.data() != static_cast<std::byte>(0xFF))
             {
                 remainingData = remainingData.subspan(1);
@@ -69,11 +69,10 @@ namespace OpenLoco
         auto imgRes = ObjectManager::loadImageTable(remainingData);
         image = imgRes.imageOffset;
 
-        // Related to unk2?
-        const auto offset = (flags & DockObjectFlags::unk01) != DockObjectFlags::none ? numAux02Ent * 4 : 1;
-        var_0C = imgRes.imageOffset + offset;
+        const auto offset = hasFlags(DockObjectFlags::hasShadows) ? (numBuildingVariations * 4) + 1 : 1;
+        buildingImage = imgRes.imageOffset + offset;
 
-        // Unused code numAux01 related
+        // Unused code numBuildingParts related
 
         assert(remainingData.size() == imgRes.tableLength);
     }
@@ -83,9 +82,19 @@ namespace OpenLoco
     {
         name = 0;
         image = 0;
-        var_0C = 0;
-        var_14 = nullptr;
-        var_18 = nullptr;
-        std::fill(std::begin(var_1C), std::end(var_1C), nullptr);
+        buildingImage = 0;
+        partHeights = nullptr;
+        buildingPartAnimations = nullptr;
+        std::fill(std::begin(buildingVariationParts), std::end(buildingVariationParts), nullptr);
+    }
+
+    std::span<const std::uint8_t> DockObject::getBuildingParts(const uint8_t buildingType) const
+    {
+        const auto* partsPointer = buildingVariationParts[buildingType];
+        auto* end = partsPointer;
+        while (*end != 0xFF)
+            end++;
+
+        return std::span<const std::uint8_t>(partsPointer, end);
     }
 }
