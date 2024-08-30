@@ -31,6 +31,7 @@
 #include <algorithm>
 #include <array>
 #include <cinttypes>
+#include <iostream>
 #include <memory>
 #include <sfl/static_vector.hpp>
 
@@ -1536,15 +1537,26 @@ namespace OpenLoco::Ui::WindowManager
 
             if (viewport->x < window->x)
             {
-                viewport->width = window->x - viewport->x;
-                viewport->viewWidth = viewport->width << viewport->zoom;
-                viewportRedrawAfterShift(window, viewport, x, y);
+                std::cout << std::endl
+                          << "Viewport x is less than window x " << viewport->x << " < " << window->x << "," << viewport->width
+                          << "," << viewport->viewWidth << "," << static_cast<uint16_t>(viewport->zoom);
+                if ((viewport->width != (window->x - viewport->x)) || (viewport->viewWidth != (viewport->width << viewport->zoom)))
+                {
+                    viewport->width = window->x - viewport->x;
+                    viewport->viewWidth = viewport->width << viewport->zoom;
+                    viewportRedrawAfterShift(window, viewport, x, y);
+                }
+
+                std::cout << " Viewport Redrawn " << viewport->width << "," << viewport->viewWidth;
 
                 viewport->x += viewport->width;
                 viewport->viewX += viewport->width << viewport->zoom;
                 viewport->width = viewCopy.width - viewport->width;
                 viewport->viewWidth = viewport->width << viewport->zoom;
                 viewportRedrawAfterShift(window, viewport, x, y);
+
+                std::cout << " Viewport Redrawn again " << viewport->x << "," << viewport->viewX << "," << viewport->width << "," << viewport->viewWidth
+                          << std::endl;
             }
             else if (viewport->x + viewport->width > window->x + window->width)
             {
