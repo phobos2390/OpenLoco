@@ -311,6 +311,10 @@ namespace OpenLoco::Paint
         void setWaterHeight2(int16_t height) { _waterHeight2 = height; }
         PaintStruct* getLastPS() { return _lastPS; }
         void setLastPS(PaintStruct* ps) { _lastPS = ps; }
+        void setMaxClipHeight(int16_t height) { _maxClipHeight = height; }
+        void setMinClipHeight(int16_t height) { _minClipHeight = height; }
+        int16_t getMaxClipHeight() { return _maxClipHeight; }
+        int16_t getMinClipHeight() { return _minClipHeight; }
 
         /*
          * @param amount    @<eax>
@@ -503,6 +507,8 @@ namespace OpenLoco::Paint
         uint32_t _roadMergeExits{};
         int16_t _roadMergeHeight{};
         uint16_t _roadMergeStreetlightType{};
+        int16_t _minClipHeight{};
+        int16_t _maxClipHeight{};
 
         // From OpenRCT2 equivalent fields not found yet or new
         // AttachedPaintStruct* unkF1AD2C;              // no equivalent
