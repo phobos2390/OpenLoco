@@ -2315,7 +2315,7 @@ strings:
   2260: "{COLOUR WINDOW_2} Length: {COLOUR BLACK}{INT32_2DP} tile(s)"
   2261: "{NEWLINE}{COLOUR WINDOW_2} Length: {COLOUR BLACK}{INT32_2DP} tile(s)"
   2262: "{NEWLINE}Length:  {INT32_2DP} tile(s)"
-  2263: "{COLOUR BLACK}{UINT16}/{UINT16}"
+  2263: "{COLOUR WINDOW_2}{UINT16}/{UINT16}"
   2264: "Giant screenshot"
   2265: "{COLOUR WINDOW_2} Filename: {COLOUR BLACK}{STRINGID}"
   2266: "Scenario options"
@@ -2448,3 +2448,5 @@ strings:
   2393: 'Gradient (default)'
   2394: 'Solid colour'
   2395: 'Translucent colour'
+  2396: "Max Clip Height Increment"
+  2397: "Max Clip Height Decrement"

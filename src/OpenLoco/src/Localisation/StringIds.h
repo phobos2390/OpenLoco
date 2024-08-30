@@ -2107,6 +2107,9 @@ namespace OpenLoco::StringIds
     constexpr StringId windowFrameStyleGradient = 2393;
     constexpr StringId windowFrameStyleSolid = 2394;
     constexpr StringId windowFrameStyleTranslucent = 2395;
+    constexpr StringId shortcut_max_clip_height_increment = 2396;
+    constexpr StringId shortcut_max_clip_height_decrement = 2397;
+
 
     constexpr StringId temporary_object_load_str_0 = 8192;
     constexpr StringId temporary_object_load_str_1 = 8193;

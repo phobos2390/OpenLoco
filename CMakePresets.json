@@ -14,30 +14,6 @@
                 "type": "equals",
                 "lhs": "${hostSystemName}",
                 "rhs": "Windows"
-            }
-        },
-        {
-            "name": "windows",
-            "displayName": "x86-64",
-            "description": "Configure environment for Windows x86-64",
-            "inherits": "windows-base",
-            "generator": "Visual Studio 17 2022",
-            "cacheVariables": {
-                "VCPKG_TARGET_TRIPLET": {
-                    "type": "STRING",
-                    "value": "x64-windows-static"
-                }
-            }
-        },
-        {
-            "name": "windows-x86-32-ci",
-            "displayName": "x86-32 CI",
-            "description": "CI configure environment for Windows x86-32",
-            "inherits": "windows-base",
-            "generator": "Visual Studio 17 2022",
-            "architecture": {
-                "strategy": "set",
-                "value": "Win32"
             },
             "cacheVariables": {
                 "VCPKG_TARGET_TRIPLET": {
@@ -51,9 +27,35 @@
             }
         },
         {
-            "name": "posix-base",
-            "hidden": true,
+            "name": "windows-msvc",
+            "displayName": "MSVC",
+            "description": "Default configure environment for windows",
+            "inherits": "windows-base",
+            "generator": "Visual Studio 17 2022",
+            "architecture": {
+                "strategy": "set",
+                "value": "Win32"
+            }
+        },
+        {
+            "name": "windows-ninja",
+            "displayName": "Ninja",
+            "description": "Ninja configure environment for windows",
+            "inherits": "windows-base",
+            "generator": "Ninja Multi-Config",
+            "architecture": {
+                "strategy": "external",
+                "value": "x86"
+            }
+        },
+        {
+            "name": "linux-arch",
+            "displayName": "Linux-arch-ci",
+            "description": "Ninja configure environment for linux",
+            "generator": "Ninja Multi-Config",
             "binaryDir": "${sourceDir}/build/${presetName}",
+            "toolchainFile": "${sourceDir}/cmake/linux_x86_toolchain.cmake",
+            "vendor": {"microsoft.com/VisualStudioSettings/CMake/1.0": {"intelliSenseMode": "linux-gcc-x86"}},
             "condition": {
                 "type": "not",
                 "condition": {
@@ -62,22 +64,115 @@
                     "rhs": "Windows"
                 }
             },
-            "generator": "Ninja Multi-Config"
-        },
-        {
-            "name": "posix",
-            "displayName": "POSIX",
-            "description": "Ninja configure environment for POSIX",
-            "inherits": "posix-base"
-        },
-        {
-            "name": "linux-x86-32-ci",
-            "displayName": "Linux x86-32 CI",
-            "description": "CI Ninja congfigure environment for Linux x86-32",
-            "inherits": "posix-base",
-            "toolchainFile": "${sourceDir}/cmake/linux_x86_toolchain.cmake",
-            "vendor": { "microsoft.com/VisualStudioSettings/CMake/1.0": { "intelliSenseMode": "linux-gcc-x86" } },
             "cacheVariables": {
+                "OPENLOCO_HEADER_CHECK": {
+                    "type": "BOOL",
+                    "value": true
+                },
+                "OPENLOCO_USE_CCACHE": {
+                    "type": "BOOL",
+                    "value": false
+                },
+                "OPENLOCO_BUILD_TESTS": {
+                    "type": "BOOL",
+                    "value": false
+                },
+                "PNG_LIBRARY": {
+                    "type": "FILEPATH",
+                    "value": "/usr/lib32/libpng16.so"
+                },
+                "PNG_PNG_INCLUDE_DIR": {
+                    "type": "PATH",
+                    "value": "/usr/include"
+                },
+                "SDL2_DIR": {
+                    "type": "PATH",
+                    "value": "/usr/lib32/cmake"
+                },
+                "ZLIB_LIBRARY": {
+                    "type": "FILEPATH",
+                    "value": "/usr/lib32/libz.so"
+                }
+                
+            }
+        },
+        {
+            "name": "linux-arch-gtest",
+            "displayName": "Linux-arch-gtest-ci",
+            "description": "Ninja configure environment for linux",
+            "generator": "Ninja Multi-Config",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "toolchainFile": "${sourceDir}/cmake/linux_x86_toolchain.cmake",
+            "vendor": {"microsoft.com/VisualStudioSettings/CMake/1.0": {"intelliSenseMode": "linux-gcc-x86"}},
+            "condition": {
+                "type": "not",
+                "condition": {
+                    "type": "equals",
+                    "lhs": "${hostSystemName}",
+                    "rhs": "Windows"
+                }
+            },
+            "cacheVariables": {
+                "OPENLOCO_HEADER_CHECK": {
+                    "type": "BOOL",
+                    "value": true
+                },
+                "OPENLOCO_USE_CCACHE": {
+                    "type": "BOOL",
+                    "value": false
+                },
+                "OPENLOCO_BUILD_TESTS": {
+                    "type": "BOOL",
+                    "value": true
+                },
+                "GTEST_LIBRARY": {
+                    "type": "FILEPATH",
+                    "value": "/usr/lib32/libgtest.so"
+                },
+                "GTEST_MAIN_LIBRARY": {
+                    "type": "FILEPATH",
+                    "value": "/usr/lib32/libgtest_main.so"
+                },
+                "PNG_LIBRARY": {
+                    "type": "FILEPATH",
+                    "value": "/usr/lib32/libpng16.so"
+                },
+                "PNG_PNG_INCLUDE_DIR": {
+                    "type": "PATH",
+                    "value": "/usr/include"
+                },
+                "SDL2_DIR": {
+                    "type": "PATH",
+                    "value": "/usr/lib32/cmake"
+                },
+                "ZLIB_LIBRARY": {
+                    "type": "FILEPATH",
+                    "value": "/usr/lib32/libz.so"
+                }
+                
+            }
+        },
+        {
+            "name": "linux",
+            "displayName": "Linux-ci",
+            "description": "Ninja configure environment for linux",
+            "generator": "Ninja Multi-Config",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "toolchainFile": "${sourceDir}/cmake/linux_x86_toolchain.cmake",
+            "vendor": {"microsoft.com/VisualStudioSettings/CMake/1.0": {"intelliSenseMode": "linux-gcc-x86"}},
+            "condition": {
+                "type": "not",
+                "condition": {
+                    "type": "equals",
+                    "lhs": "${hostSystemName}",
+                    "rhs": "Windows"
+                }
+            },
+            "cacheVariables": {
+                "OPENLOCO_HEADER_CHECK": {
+                    "type": "BOOL",
+                    "value": true
+                },
                 "OPENLOCO_USE_CCACHE": {
                     "type": "BOOL",
                     "value": false
@@ -97,11 +192,20 @@
             }
         },
         {
-            "name": "mingw32",
+            "name": "mingw",
             "displayName": "MinGW32-ci",
             "description": "Ninja configure environment for MinGW32",
-            "inherits": "posix-base",
+            "generator": "Ninja Multi-Config",
+            "binaryDir": "${sourceDir}/build/${presetName}",
             "toolchainFile": "${sourceDir}/cmake/mingw32_toolchain.cmake",
+            "condition": {
+                "type": "not",
+                "condition": {
+                    "type": "equals",
+                    "lhs": "${hostSystemName}",
+                    "rhs": "Windows"
+                }
+            },
             "cacheVariables": {
                 "OPENLOCO_USE_CCACHE": {
                     "type": "BOOL",
@@ -112,132 +216,98 @@
                     "value": false
                 }
             }
-        },
-        {
-            "name": "linux-vcpkg-static",
-            "displayName": "Linux-vcpkg-static",
-            "description": "Ninja configure environment for linux (static linkage)",
-            "inherits": "posix-base",
-            "vendor": { "microsoft.com/VisualStudioSettings/CMake/1.0": { "intelliSenseMode": "linux-gcc-x64" } },
-            "cacheVariables": {
-                "OPENLOCO_USE_VCPKG": {
-                    "type": "BOOL",
-                    "value": true
-                },
-                "VCPKG_TARGET_TRIPLET": {
-                    "type": "STRING",
-                    "value": "x64-linux"
-                },
-                "VCPKG_LIBRARY_LINKAGE": {
-                    "type": "STRING",
-                    "value": "static"
-                },
-                "CMAKE_FIND_ROOT_PATH_MODE_LIBRARY": {
-                    "type": "STRING",
-                    "value": "ONLY"
-                },
-                "CMAKE_FIND_ROOT_PATH_MODE_PACKAGE": {
-                    "type": "STRING",
-                    "value": "ONLY"
-                }
-            }
-        },
-        {
-            "name": "macos-vcpkg-static",
-            "displayName": "MacOS arm64 VCPKG static",
-            "description": "Ninja configure environment for MacOS (static linkage)",
-            "inherits": "posix-base",
-            "cacheVariables": {
-                "OPENLOCO_USE_VCPKG": {
-                    "type": "BOOL",
-                    "value": true
-                },
-                "VCPKG_TARGET_TRIPLET": {
-                    "type": "STRING",
-                    "value": "arm64-osx"
-                },
-                "VCPKG_LIBRARY_LINKAGE": {
-                    "type": "STRING",
-                    "value": "static"
-                },
-                "CMAKE_FIND_ROOT_PATH_MODE_LIBRARY": {
-                    "type": "STRING",
-                    "value": "ONLY"
-                },
-                "CMAKE_FIND_ROOT_PATH_MODE_PACKAGE": {
-                    "type": "STRING",
-                    "value": "ONLY"
-                }
-            }
         }
     ],
     "buildPresets": [
         {
-            "name": "windows-debug",
-            "configurePreset": "windows",
+            "name": "windows-msvc-debug",
+            "configurePreset": "windows-msvc",
             "displayName": "Debug",
-            "description": "Build Debug MSVC Configuration",
+            "description": "Build Debug MSVC Configurations",
             "configuration": "Debug"
         },
         {
-            "name": "windows-release",
-            "configurePreset": "windows",
+            "name": "windows-msvc-release",
+            "configurePreset": "windows-msvc",
             "displayName": "Release",
-            "description": "Build Release Configuration",
+            "description": "Build Release MSVC Configurations",
             "configuration": "Release"
         },
         {
-            "name": "windows-x86-32-ci",
-            "configurePreset": "windows-x86-32-ci",
-            "displayName": "Release",
-            "description": "Build Release x86-32 CI Configuration",
-            "configuration": "Release"
-        },
-        {
-            "name": "posix-debug",
-            "configurePreset": "posix",
+            "name": "windows-ninja-debug",
+            "configurePreset": "windows-ninja",
             "displayName": "Debug",
-            "description": "Build Debug Configuration",
+            "description": "Build Debug Ninja Configurations",
+            "configuration": "Debug"
+        },
+        {
+            "name": "windows-ninja-release",
+            "configurePreset": "windows-ninja",
+            "displayName": "Release",
+            "description": "Build Release Ninja Configurations",
+            "configuration": "Release"
+        },
+        {
+            "name": "linux-debug",
+            "configurePreset": "linux",
+            "displayName": "Debug",
+            "description": "Build Debug Ninja Configurations",
             "configuration": "Debug",
             "nativeToolOptions": [ "-k0" ]
         },
         {
-            "name": "posix-release",
-            "configurePreset": "posix",
+            "name": "linux-release",
+            "configurePreset": "linux",
             "displayName": "Release",
-            "description": "Build Release Configuration",
+            "description": "Build Release Ninja Configurations",
             "configuration": "Release",
             "nativeToolOptions": [ "-k0" ]
         },
         {
-            "name": "linux-x86-32-ci",
-            "configurePreset": "linux-x86-32-ci",
+            "name": "linux-arch-debug",
+            "configurePreset": "linux-arch",
+            "displayName": "Debug",
+            "description": "Build Debug Ninja Configurations",
+            "configuration": "Debug",
+            "nativeToolOptions": [ "-k0" ]
+        },
+        {
+            "name": "linux-arch-release",
+            "configurePreset": "linux-arch",
             "displayName": "Release",
-            "description": "Build Release Configuration",
+            "description": "Build Release Ninja Configurations",
             "configuration": "Release",
             "nativeToolOptions": [ "-k0" ]
         },
         {
-            "name": "linux-vcpkg-static",
-            "configurePreset": "linux-vcpkg-static",
+            "name": "linux-arch-gtest-debug",
+            "configurePreset": "linux-arch-gtest",
+            "displayName": "Debug",
+            "description": "Build Debug Ninja Configurations",
+            "configuration": "Debug",
+            "nativeToolOptions": [ "-k0" ]
+        },
+        {
+            "name": "linux-arch-gtest-release",
+            "configurePreset": "linux-arch-gtest",
             "displayName": "Release",
-            "description": "Build Release Configuration (vcpkg static linkage)",
+            "description": "Build Release Ninja Configurations",
             "configuration": "Release",
             "nativeToolOptions": [ "-k0" ]
         },
         {
-            "name": "macos-vcpkg-static",
-            "configurePreset": "macos-vcpkg-static",
-            "displayName": "Release",
-            "description": "Build Release Configuration (vcpkg static linkage)",
-            "configuration": "Release",
+            "name": "mingw-debug",
+            "configurePreset": "mingw",
+            "displayName": "Debug",
+            "description": "Build Debug Ninja Configurations",
+            "configuration": "Debug",
             "nativeToolOptions": [ "-k0" ]
         },
         {
-            "name": "mingw32",
-            "configurePreset": "mingw32",
+            "name": "mingw-release",
+            "configurePreset": "mingw",
             "displayName": "Release",
-            "description": "Build Release Configuration",
+            "description": "Build Release Ninja Configurations",
             "configuration": "Release",
             "nativeToolOptions": [ "-k0" ]
         }

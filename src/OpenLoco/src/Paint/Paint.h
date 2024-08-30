@@ -313,6 +313,10 @@ namespace OpenLoco::Paint
         void setLastPS(PaintStruct* ps) { _lastPS = ps; }
         bool isHitTest() const { return _isHitTest; }
         bool skipTrackRoadSurfaces() const { return _skipTrackRoadSurfaces; }
+        void setMaxClipHeight(int16_t height) { _maxClipHeight = height; }
+        void setMinClipHeight(int16_t height) { _minClipHeight = height; }
+        int16_t getMaxClipHeight() { return _maxClipHeight; }
+        int16_t getMinClipHeight() { return _minClipHeight; }
 
         /*
          * @param amount    @<eax>
@@ -506,6 +510,8 @@ namespace OpenLoco::Paint
         uint16_t _roadMergeStreetlightType{};
         bool _isHitTest{};             // 0x0050BF68
         bool _skipTrackRoadSurfaces{}; // 0x00522095 bit 0
+        int16_t _minClipHeight{};
+        int16_t _maxClipHeight{};
 
         // From OpenRCT2 equivalent fields not found yet or new
         // AttachedPaintStruct* unkF1AD2C;              // no equivalent
