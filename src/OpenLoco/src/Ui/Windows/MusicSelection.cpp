@@ -61,7 +61,6 @@ namespace OpenLoco::Ui::Windows::MusicSelection
             getEvents());
 
         window->setWidgets(_widgets);
-        window->enabledWidgets = 1 << widx::close;
         window->initScrollWidgets();
 
         auto interface = ObjectManager::get<InterfaceSkinObject>();
@@ -152,7 +151,7 @@ namespace OpenLoco::Ui::Windows::MusicSelection
     }
 
     // 0x004C1757
-    static void onMouseUp(Ui::Window& window, WidgetIndex_t widgetIndex)
+    static void onMouseUp(Ui::Window& window, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         switch (widgetIndex)
         {
@@ -219,7 +218,7 @@ namespace OpenLoco::Ui::Windows::MusicSelection
     }
 
     // 0x004C1762
-    static std::optional<FormatArguments> tooltip([[maybe_unused]] Ui::Window& window, [[maybe_unused]] WidgetIndex_t widgetIndex)
+    static std::optional<FormatArguments> tooltip([[maybe_unused]] Ui::Window& window, [[maybe_unused]] WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         FormatArguments args{};
         args.push(StringIds::tooltip_scroll_list);

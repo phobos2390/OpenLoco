@@ -118,14 +118,13 @@ namespace OpenLoco::Ui
 
     struct WidgetState
     {
-        Window* window;
-        Gfx::RectInsetFlags flags;
-        AdvancedColour colour;
-        bool enabled;
-        bool disabled;
-        bool activated;
-        bool hovered;
-        int scrollviewIndex;
+        Window* window{};
+        Gfx::RectInsetFlags flags{};
+        AdvancedColour colour{};
+        bool disabled{};
+        bool activated{};
+        bool hovered{};
+        int scrollviewIndex{};
     };
 
     struct Widget;
@@ -200,10 +199,21 @@ namespace OpenLoco::Ui
         uint32_t styleData{};
 
         // Widget state.
-        bool enabled : 1 {};
         bool disabled : 1 {};
         bool activated : 1 {};
         bool hidden : 1 {};
+
+        // TODO: Remove this once position is a member.
+        Ui::Point position() const
+        {
+            return { static_cast<int16_t>(left), static_cast<int16_t>(top) };
+        }
+
+        // TODO: Remove this once size is a member.
+        Ui::Size size() const
+        {
+            return { width(), height() };
+        }
 
         // TODO: Make tabs actual widgets.
         static void drawTab(Window* w, Gfx::DrawingContext& drawingCtx, uint32_t imageId, WidgetIndex_t index);

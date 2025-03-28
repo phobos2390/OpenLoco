@@ -467,7 +467,8 @@ namespace OpenLoco::Input
                         auto tool = WindowManager::find(ToolManager::getToolWindowType(), ToolManager::getToolWindowNumber());
                         if (tool != nullptr)
                         {
-                            tool->callToolDragContinue(ToolManager::getToolWidgetIndex(), x, y);
+                            // TODO: Handle widget id properly for tools.
+                            tool->callToolDragContinue(ToolManager::getToolWidgetIndex(), WidgetId::none, x, y);
                         }
                     }
                 }
@@ -488,7 +489,8 @@ namespace OpenLoco::Input
                     auto tool = WindowManager::find(ToolManager::getToolWindowType(), ToolManager::getToolWindowNumber());
                     if (tool != nullptr)
                     {
-                        tool->callToolDragEnd(ToolManager::getToolWidgetIndex());
+                        // TODO: Handle widget id properly for tools.
+                        tool->callToolDragEnd(ToolManager::getToolWidgetIndex(), WidgetId::none);
                     }
                 }
                 else if (!hasFlag(Flags::leftMousePressed))
@@ -692,9 +694,11 @@ namespace OpenLoco::Input
                 if (x != 0 || y != 0)
                 {
                     _ticksSinceDragStart = 1000;
+
                     Ui::Widget* widget = &window->widgets[_dragWidgetIndex];
-                    Ui::ScrollView::horizontalDragFollow(window, widget, _dragWidgetIndex, _dragScrollIndex, x);
-                    Ui::ScrollView::verticalDragFollow(window, widget, _dragWidgetIndex, _dragScrollIndex, y);
+                    const auto invert = Config::get().invertRightMouseViewPan ? -1 : 1;
+                    Ui::ScrollView::horizontalDragFollow(window, widget, _dragWidgetIndex, _dragScrollIndex, x * invert);
+                    Ui::ScrollView::verticalDragFollow(window, widget, _dragWidgetIndex, _dragScrollIndex, y * invert);
                 }
 
                 break;
@@ -882,7 +886,7 @@ namespace OpenLoco::Input
                             auto pressedWidget = &dragWindow->widgets[_pressedWidgetIndex];
 
                             Audio::playSound(Audio::SoundId::clickPress, dragWindow->x + pressedWidget->midX());
-                            dragWindow->callOnMouseUp(_pressedWidgetIndex);
+                            dragWindow->callOnMouseUp(_pressedWidgetIndex, pressedWidget->id);
                         }
                     }
                 }
@@ -922,7 +926,7 @@ namespace OpenLoco::Input
 
         if (WindowManager::getCurrentModalType() == Ui::WindowType::undefined || WindowManager::getCurrentModalType() == window->type)
         {
-            window->callOnDropdown(_pressedWidgetIndex, item);
+            window->callOnDropdown(_pressedWidgetIndex, window->widgets[_pressedWidgetIndex].id, item);
         }
     }
 
@@ -1045,7 +1049,7 @@ namespace OpenLoco::Input
                         // Handle click repeat
                         if (window->isHoldable(widgetIndex) && _clickRepeatTicks >= 16 && (_clickRepeatTicks % 4) == 0)
                         {
-                            window->callOnMouseDown(widgetIndex);
+                            window->callOnMouseDown(widgetIndex, window->widgets[widgetIndex].id);
                         }
 
                         bool flagSet = Input::hasFlag(Flags::widgetPressed);
@@ -1145,7 +1149,7 @@ namespace OpenLoco::Input
             if (window != nullptr && window->type == *_pressedWindowType && window->number == _pressedWindowNumber && widgetIndex == _pressedWidgetIndex && !window->isDisabled(widgetIndex))
             {
                 WindowManager::invalidateWidget(_pressedWindowType, _pressedWindowNumber, _pressedWidgetIndex);
-                window->callOnMouseUp(widgetIndex);
+                window->callOnMouseUp(widgetIndex, window->widgets[widgetIndex].id);
                 return;
             }
         }
@@ -1221,7 +1225,7 @@ namespace OpenLoco::Input
         {
             if (!window->isDisabled(widgetIndex))
             {
-                window->call_3(widgetIndex);
+                window->callOnMouseHover(widgetIndex, window->widgets[widgetIndex].id);
             }
         }
 
@@ -1372,7 +1376,8 @@ namespace OpenLoco::Input
                     auto w = WindowManager::find(ToolManager::getToolWindowType(), ToolManager::getToolWindowNumber());
                     if (w != nullptr)
                     {
-                        w->callToolDown(ToolManager::getToolWidgetIndex(), x, y);
+                        // TODO: Handle the WidgetId properly for tools.
+                        w->callToolDown(ToolManager::getToolWidgetIndex(), WidgetId::none, x, y);
                         setFlag(Flags::leftMousePressed);
                     }
                 }
@@ -1402,7 +1407,7 @@ namespace OpenLoco::Input
                     _clickRepeatTicks = 1;
 
                     WindowManager::invalidateWidget(window->type, window->number, widgetIndex);
-                    window->callOnMouseDown(widgetIndex);
+                    window->callOnMouseDown(widgetIndex, window->widgets[widgetIndex].id);
                 }
 
                 break;
@@ -1466,7 +1471,7 @@ namespace OpenLoco::Input
                 _dragLast->y = y;
 
                 Ui::hideCursor();
-                sub_407218();
+                startCursorDrag();
 
                 _mousePosX = 0;
                 _mousePosY = 0;
@@ -1546,7 +1551,7 @@ namespace OpenLoco::Input
         _dragScrollIndex = window->getScrollDataIndex(widgetIndex);
 
         Ui::hideCursor();
-        sub_407218();
+        startCursorDrag();
     }
 
 #pragma mark - Widgets
@@ -1627,7 +1632,7 @@ namespace OpenLoco::Input
                     default:
                         _scrollLast->x = x;
                         _scrollLast->y = y;
-                        cursorId = window->callCursor(widgetIdx, x, y, cursorId);
+                        cursorId = window->callCursor(widgetIdx, window->widgets[widgetIdx].id, x, y, cursorId);
                         break;
 
                     case Ui::WidgetType::scrollview:
@@ -1643,7 +1648,7 @@ namespace OpenLoco::Input
 
                         if (res.area == Ui::ScrollPart::view)
                         {
-                            cursorId = window->callCursor(widgetIdx, res.scrollviewLoc.x, res.scrollviewLoc.y, cursorId);
+                            cursorId = window->callCursor(widgetIdx, window->widgets[widgetIdx].id, res.scrollviewLoc.x, res.scrollviewLoc.y, cursorId);
                         }
                         break;
                     }
@@ -1803,7 +1808,7 @@ namespace OpenLoco::Input
     // 0x004C70F1
     static MouseButton loc_4C70F1(uint32_t& x, int16_t& y)
     {
-        sub_407231();
+        stopCursorDrag();
         resetFlag(Flags::rightMousePressed);
         Ui::setCursor(_52336C);
 

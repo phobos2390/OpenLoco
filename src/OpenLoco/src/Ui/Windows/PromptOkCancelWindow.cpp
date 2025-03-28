@@ -65,7 +65,6 @@ namespace OpenLoco::Ui::Windows::PromptOkCancel
         // Prepare description buffer for drawing
         StringManager::formatString(_descriptionBuffer, descriptionId, descriptionArgs);
 
-        window->enabledWidgets = (1 << widx::closeButton) | (1 << widx::okButton) | (1 << widx::cancelButton);
         window->initScrollWidgets();
         window->setColour(WindowColour::primary, AdvancedColour(Colour::mutedDarkRed).translucent());
         window->setColour(WindowColour::secondary, AdvancedColour(Colour::mutedDarkRed).translucent());
@@ -96,7 +95,7 @@ namespace OpenLoco::Ui::Windows::PromptOkCancel
     {
         if (keyCode == SDLK_ESCAPE)
         {
-            w.callOnMouseUp(widx::closeButton);
+            w.callOnMouseUp(widx::closeButton, w.widgets[widx::closeButton].id);
             return true;
         }
         return false;
@@ -111,7 +110,7 @@ namespace OpenLoco::Ui::Windows::PromptOkCancel
     }
 
     // 0x004470FD
-    static void onMouseUp(Window& self, const WidgetIndex_t widgetIndex)
+    static void onMouseUp(Window& self, const WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         switch (widgetIndex)
         {

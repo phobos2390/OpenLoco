@@ -102,11 +102,13 @@ namespace OpenLoco::Ui
     }
 #endif // _WIN32
 
+    // Returns the width of the game screen, which is scaled by the window scale factor.
     int32_t width()
     {
         return _screenInfo->width;
     }
 
+    // Returns the height of the game screen, which is scaled by the window scale factor.
     int32_t height()
     {
         return _screenInfo->height;
@@ -818,7 +820,8 @@ namespace OpenLoco::Ui
         auto toolWindow = WindowManager::find(ToolManager::getToolWindowType(), ToolManager::getToolWindowNumber());
         if (toolWindow != nullptr)
         {
-            toolWindow->callToolUpdate(ToolManager::getToolWidgetIndex(), x, y);
+            // TODO: Use widget ids properly for tools.
+            toolWindow->callToolUpdate(ToolManager::getToolWidgetIndex(), WidgetId::none, x, y);
         }
         else
         {

@@ -1,6 +1,8 @@
 #pragma once
 
+#include "GameCommands/Track/CreateTrackMod.h"
 #include "Map/TileManager.h"
+#include "Map/Track/TrackModSection.h"
 #include "Objects/VehicleObject.h"
 #include "ScenarioConstruction.h"
 #include "Ui/Widgets/CaptionWidget.h"
@@ -10,6 +12,7 @@
 #include "Ui/Widgets/Wt3Widget.h"
 #include "Ui/WindowManager.h"
 #include <OpenLoco/Interop/Interop.hpp>
+#include <sfl/static_vector.hpp>
 
 using namespace OpenLoco::Interop;
 using namespace OpenLoco::World;
@@ -110,7 +113,7 @@ namespace OpenLoco::Ui::Windows::Construction
         uint8_t stationGhostRotation;                   // 0x0113606B
         uint8_t stationGhostTrackId;                    // 0x0113606C
         uint8_t stationGhostTileIndex;                  // 0x0113606D
-        uint8_t lastSelectedTrackModSection;            // 0x0113606E
+        Track::ModSection lastSelectedTrackModSection;  // 0x0113606E
         uint8_t pad_113606F[3];                         // 0x0113606F
         uint8_t byte_1136072;                           // 0x01136072
         uint8_t byte_1136073;                           // 0x01136073
@@ -159,8 +162,6 @@ namespace OpenLoco::Ui::Windows::Construction
                 Widgets::Tab({ 96, 15 }, { 31, 27 }, WindowColour::secondary, ImageIds::tab, StringIds::tab_electrification_construction));
         }
 
-        constexpr uint64_t enabledWidgets = (1 << widx::caption) | (1 << widx::close_button) | (1 << widx::tab_construction) | (1 << widx::tab_station) | (1 << widx::tab_signal) | (1 << widx::tab_overhead);
-
         void prepareDraw(Window* self);
         void resetWindow(Window& self, WidgetIndex_t tabWidgetIndex);
         void switchTab(Window* self, WidgetIndex_t widgetIndex);
@@ -172,18 +173,20 @@ namespace OpenLoco::Ui::Windows::Construction
         void setTrackOptions(const uint8_t trackType);
         void setDisabledWidgets(Window* self);
         void createConstructionWindow();
-        void refreshAirportList(uint8_t* stationList);
-        void refreshDockList(uint8_t* stationList);
-        void refreshStationList(uint8_t* stationList, uint8_t trackType, TransportMode transportMode);
-        void refreshBridgeList(uint8_t* bridgeList, uint8_t trackType, TransportMode transportMode);
-        void refreshModList(uint8_t* modList, uint8_t trackType, TransportMode transportMode);
         void sub_4A3A50();
-        void refreshSignalList(uint8_t* signalList, uint8_t trackType);
         void setNextAndPreviousTrackTile(const TrackElement& elTrack, const World::Pos2& pos);
         void setNextAndPreviousRoadTile(const RoadElement& elRoad, const World::Pos2& pos);
         bool isPointCloserToNextOrPreviousTile(const Point& point, const Viewport& viewport);
         void previousTab(Window* self);
         void nextTab(Window* self);
+
+        template<uint32_t NewCapacity, uint32_t LegacyCapacity>
+        void copyToLegacyList(const sfl::static_vector<uint8_t, NewCapacity>& sflType, uint8_t (&legacyList)[LegacyCapacity])
+        {
+            static_assert(LegacyCapacity > NewCapacity);
+            std::copy(sflType.begin(), sflType.end(), legacyList);
+            legacyList[sflType.size()] = 0xFFU;
+        }
     }
 
     namespace Construction
@@ -251,8 +254,6 @@ namespace OpenLoco::Ui::Windows::Construction
 
         std::span<const Widget> getWidgets();
 
-        constexpr uint64_t enabledWidgets = Common::enabledWidgets | allConstruction;
-
         void reset();
         void activateSelectedConstructionWidgets();
         void tabReset(Window* self);
@@ -281,8 +282,6 @@ namespace OpenLoco::Ui::Windows::Construction
 
         std::span<const Widget> getWidgets();
 
-        const uint64_t enabledWidgets = Common::enabledWidgets | (1 << station) | (1 << station_dropdown) | (1 << image) | (1 << rotate);
-
         void tabReset(Window* self);
         void removeStationGhost();
         const WindowEventList& getEvents();
@@ -299,8 +298,6 @@ namespace OpenLoco::Ui::Windows::Construction
         };
 
         std::span<const Widget> getWidgets();
-
-        const uint64_t enabledWidgets = Common::enabledWidgets | (1 << signal) | (1 << signal_dropdown) | (1 << both_directions) | (1 << single_direction);
 
         void tabReset(Window* self);
         void removeSignalGhost();
@@ -321,8 +318,6 @@ namespace OpenLoco::Ui::Windows::Construction
         };
 
         std::span<const Widget> getWidgets();
-
-        const uint64_t enabledWidgets = Common::enabledWidgets | (1 << checkbox_1) | (1 << checkbox_2) | (1 << checkbox_3) | (1 << checkbox_4) | (1 << image) | (1 << track) | (1 << track_dropdown);
 
         void tabReset(Window* self);
         void removeTrackModsGhost();

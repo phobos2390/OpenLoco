@@ -66,7 +66,6 @@ namespace OpenLoco::Ui::Windows::PromptSaveWindow
             }
 
             window->setWidgets(_widgets);
-            window->enabledWidgets = (1 << widx::closeButton) | (1 << widx::saveButton) | (1 << widx::dontSaveButton) | (1 << widx::cancelButton);
             window->initScrollWidgets();
             window->setColour(WindowColour::primary, AdvancedColour(Colour::mutedDarkRed).translucent());
             window->flags |= Ui::WindowFlags::transparent;
@@ -117,7 +116,7 @@ namespace OpenLoco::Ui::Windows::PromptSaveWindow
     }
 
     // 0x0043C3F4
-    static void onMouseUp([[maybe_unused]] Window& self, const WidgetIndex_t widgetIndex)
+    static void onMouseUp([[maybe_unused]] Window& self, const WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         switch (widgetIndex)
         {

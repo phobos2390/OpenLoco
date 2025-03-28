@@ -52,8 +52,6 @@ namespace OpenLoco::Ui::Windows::Town
             tab_company_ratings,
         };
 
-        const uint64_t enabledWidgets = (1 << widx::caption) | (1 << widx::close_button) | (1 << widx::tab_town) | (1 << widx::tab_population) | (1 << widx::tab_company_ratings);
-
         static constexpr auto makeCommonWidgets(int32_t frameWidth, int32_t frameHeight, StringId windowCaptionId)
         {
             return makeWidgets(
@@ -68,7 +66,7 @@ namespace OpenLoco::Ui::Windows::Town
 
         // Defined at the bottom of this file.
         static void prepareDraw(Window& self);
-        static void textInput(Window& self, WidgetIndex_t callingWidget, const char* input);
+        static void textInput(Window& self, WidgetIndex_t callingWidget, [[maybe_unused]] const WidgetId id, const char* input);
         static void update(Window& self);
         static void renameTownPrompt(Window* self, WidgetIndex_t widgetIndex);
         static void switchTab(Window* self, WidgetIndex_t widgetIndex);
@@ -95,8 +93,6 @@ namespace OpenLoco::Ui::Windows::Town
             Widgets::ImageButton({ 198, 68 }, { 24, 24 }, WindowColour::secondary, ImageIds::rubbish_bin, StringIds::demolish_this_town)
 
         );
-
-        const uint64_t enabledWidgets = Common::enabledWidgets | (1 << centre_on_viewport) | (1 << expand_town) | (1 << demolish_town);
 
         // 0x00498EAF
         static void prepareDraw(Window& self)
@@ -157,7 +153,7 @@ namespace OpenLoco::Ui::Windows::Town
         }
 
         // 0x00499079
-        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex)
+        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
         {
             switch (widgetIndex)
             {
@@ -385,7 +381,6 @@ namespace OpenLoco::Ui::Windows::Town
         window->invalidate();
 
         window->setWidgets(Town::widgets);
-        window->enabledWidgets = Town::enabledWidgets;
         window->holdableWidgets = 0;
         window->eventHandlers = &Town::getEvents();
         window->activatedWidgets = 0;
@@ -497,7 +492,7 @@ namespace OpenLoco::Ui::Windows::Town
         }
 
         // 0x004996AC
-        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex)
+        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
         {
             switch (widgetIndex)
             {
@@ -610,7 +605,7 @@ namespace OpenLoco::Ui::Windows::Town
         }
 
         // 0x004998E7
-        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex)
+        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
         {
             switch (widgetIndex)
             {
@@ -660,14 +655,13 @@ namespace OpenLoco::Ui::Windows::Town
             std::span<const Widget> widgets;
             const widx widgetIndex;
             const WindowEventList& events;
-            const uint64_t* enabledWidgets;
         };
 
         // clang-format off
         static TabInformation tabInformationByTabOffset[] = {
-            { Town::widgets,           widx::tab_town,            Town::getEvents(),           &Town::enabledWidgets },
-            { Population::widgets,     widx::tab_population,      Population::getEvents(),     &Common::enabledWidgets },
-            { CompanyRatings::widgets, widx::tab_company_ratings, CompanyRatings::getEvents(), &Common::enabledWidgets }
+            { Town::widgets,           widx::tab_town,            Town::getEvents()           },
+            { Population::widgets,     widx::tab_population,      Population::getEvents()     },
+            { CompanyRatings::widgets, widx::tab_company_ratings, CompanyRatings::getEvents() }
         };
         // clang-format on
 
@@ -696,7 +690,7 @@ namespace OpenLoco::Ui::Windows::Town
         }
 
         // 0x00499287
-        static void textInput(Window& self, WidgetIndex_t callingWidget, const char* input)
+        static void textInput(Window& self, WidgetIndex_t callingWidget, [[maybe_unused]] const WidgetId id, const char* input)
         {
             if (callingWidget != Common::widx::caption)
             {
@@ -765,7 +759,6 @@ namespace OpenLoco::Ui::Windows::Town
 
             auto tabInfo = tabInformationByTabOffset[widgetIndex - widx::tab_town];
 
-            self->enabledWidgets = *tabInfo.enabledWidgets;
             self->holdableWidgets = 0;
             self->eventHandlers = &tabInfo.events;
             self->activatedWidgets = 0;

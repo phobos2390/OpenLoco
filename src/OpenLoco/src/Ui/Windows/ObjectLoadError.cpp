@@ -72,7 +72,6 @@ namespace OpenLoco::Ui::Windows::ObjectLoadError
             getEvents());
 
         window->setWidgets(_widgets);
-        window->enabledWidgets = 1 << Widx::close;
         window->initScrollWidgets();
 
         auto interface = ObjectManager::get<InterfaceSkinObject>();
@@ -249,7 +248,7 @@ namespace OpenLoco::Ui::Windows::ObjectLoadError
         *scrollHeight = kRowHeight * window.rowCount;
     }
 
-    static void onMouseUp(Ui::Window& window, WidgetIndex_t widgetIndex)
+    static void onMouseUp(Ui::Window& window, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         switch (widgetIndex)
         {
@@ -271,7 +270,7 @@ namespace OpenLoco::Ui::Windows::ObjectLoadError
         window.invalidate();
     }
 
-    static std::optional<FormatArguments> tooltip([[maybe_unused]] Window& self, [[maybe_unused]] WidgetIndex_t widgetIndex)
+    static std::optional<FormatArguments> tooltip([[maybe_unused]] Window& self, [[maybe_unused]] WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         FormatArguments args{};
         args.push(StringIds::tooltip_object_list);
