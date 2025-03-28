@@ -73,7 +73,6 @@ namespace OpenLoco::Ui::Windows::TimePanel
             Ui::WindowFlags::stickToFront | Ui::WindowFlags::transparent | Ui::WindowFlags::noBackground,
             getEvents());
         window->setWidgets(_widgets);
-        window->enabledWidgets = (1 << Widx::map_chat_menu) | (1 << Widx::date_btn) | (1 << Widx::pause_btn) | (1 << Widx::normal_speed_btn) | (1 << Widx::fast_forward_btn) | (1 << Widx::extra_fast_forward_btn);
         window->var_854 = 0;
         window->numTicksVisible = 0;
         window->initScrollWidgets();
@@ -190,7 +189,7 @@ namespace OpenLoco::Ui::Windows::TimePanel
     }
 
     // 0x004398FB
-    static void onMouseUp([[maybe_unused]] Ui::Window& window, WidgetIndex_t widgetIndex)
+    static void onMouseUp([[maybe_unused]] Ui::Window& window, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         switch (widgetIndex)
         {
@@ -274,7 +273,7 @@ namespace OpenLoco::Ui::Windows::TimePanel
     }
 
     // 0x043992E
-    static void onMouseDown(Ui::Window& window, WidgetIndex_t widgetIndex)
+    static void onMouseDown(Ui::Window& window, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         switch (widgetIndex)
         {
@@ -285,7 +284,7 @@ namespace OpenLoco::Ui::Windows::TimePanel
     }
 
     // 0x439939
-    static void onDropdown(Window& w, WidgetIndex_t widgetIndex, int16_t item_index)
+    static void onDropdown(Window& w, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id, int16_t item_index)
     {
         switch (widgetIndex)
         {
@@ -296,7 +295,7 @@ namespace OpenLoco::Ui::Windows::TimePanel
     }
 
     // 0x00439944
-    static Ui::CursorId onCursor([[maybe_unused]] Ui::Window& self, WidgetIndex_t widgetIdx, [[maybe_unused]] int16_t xPos, [[maybe_unused]] int16_t yPos, Ui::CursorId fallback)
+    static Ui::CursorId onCursor([[maybe_unused]] Ui::Window& self, WidgetIndex_t widgetIdx, [[maybe_unused]] const WidgetId id, [[maybe_unused]] int16_t xPos, [[maybe_unused]] int16_t yPos, Ui::CursorId fallback)
     {
         switch (widgetIdx)
         {
@@ -309,7 +308,7 @@ namespace OpenLoco::Ui::Windows::TimePanel
     }
 
     // 0x00439955
-    static std::optional<FormatArguments> tooltip([[maybe_unused]] Ui::Window& window, WidgetIndex_t widgetIndex)
+    static std::optional<FormatArguments> tooltip([[maybe_unused]] Ui::Window& window, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         FormatArguments args{};
         switch (widgetIndex)
@@ -362,7 +361,7 @@ namespace OpenLoco::Ui::Windows::TimePanel
     }
 
     // 0x00439A15
-    static void textInput([[maybe_unused]] Window& w, WidgetIndex_t widgetIndex, const char* str)
+    static void textInput([[maybe_unused]] Window& w, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id, const char* str)
     {
         switch (widgetIndex)
         {
@@ -411,7 +410,7 @@ namespace OpenLoco::Ui::Windows::TimePanel
 
     static constexpr WindowEventList kEvents = {
         .onMouseUp = onMouseUp,
-        .event_03 = onMouseDown,
+        .onMouseHover = onMouseDown,
         .onMouseDown = onMouseDown,
         .onDropdown = onDropdown,
         .onUpdate = onUpdate,

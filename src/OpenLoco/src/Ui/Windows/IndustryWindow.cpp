@@ -51,8 +51,6 @@ namespace OpenLoco::Ui::Windows::Industry
             tab_transported,
         };
 
-        const uint64_t enabledWidgets = (1 << widx::caption) | (1 << widx::close_button) | (1 << widx::tab_industry) | (1 << widx::tab_production) | (1 << widx::tab_production_2) | (1 << widx::tab_transported);
-
         static constexpr auto makeCommonWidgets(int32_t frameWidth, int32_t frameHeight, StringId windowCaptionId)
         {
             return makeWidgets(
@@ -68,14 +66,14 @@ namespace OpenLoco::Ui::Windows::Industry
 
         // Defined at the bottom of this file.
         static void prepareDraw(Window& self);
-        static void textInput(Window& self, WidgetIndex_t callingWidget, const char* input);
+        static void textInput(Window& self, WidgetIndex_t callingWidget, [[maybe_unused]] const WidgetId id, const char* input);
         static void update(Window& self);
         static void renameIndustryPrompt(Window* self, WidgetIndex_t widgetIndex);
         static void switchTab(Window* self, WidgetIndex_t widgetIndex);
         static void drawTabs(Window* self, Gfx::DrawingContext& drawingCtx);
         static void setDisabledWidgets(Window* self);
         static void draw(Window& self, Gfx::DrawingContext& drawingCtx);
-        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex);
+        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id);
     }
 
     namespace Industry
@@ -102,8 +100,6 @@ namespace OpenLoco::Ui::Windows::Industry
             Widgets::ImageButton({ 198, 44 }, { 24, 24 }, WindowColour::secondary, ImageIds::rubbish_bin, StringIds::demolish_this_industry)
 
         );
-
-        const uint64_t enabledWidgets = Common::enabledWidgets | (1 << centre_on_viewport) | (1 << demolish_industry);
 
         // 0x00455ADD
         static void prepareDraw(Window& self)
@@ -160,7 +156,7 @@ namespace OpenLoco::Ui::Windows::Industry
         }
 
         // 0x00455C86
-        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex)
+        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
         {
             switch (widgetIndex)
             {
@@ -352,7 +348,6 @@ namespace OpenLoco::Ui::Windows::Industry
         window->invalidate();
 
         window->setWidgets(Industry::widgets);
-        window->enabledWidgets = Industry::enabledWidgets;
         window->holdableWidgets = 0;
         window->eventHandlers = &Industry::getEvents();
         window->activatedWidgets = 0;
@@ -570,14 +565,13 @@ namespace OpenLoco::Ui::Windows::Industry
             std::span<const Widget> widgets;
             const widx widgetIndex;
             const WindowEventList& events;
-            const uint64_t* enabledWidgets;
         };
 
         static TabInformation tabInformationByTabOffset[] = {
-            { Industry::widgets, widx::tab_industry, Industry::getEvents(), &Industry::enabledWidgets },
-            { Production2::widgets, widx::tab_production, Production::getEvents(), &Common::enabledWidgets },
-            { Production2::widgets, widx::tab_production_2, Production2::getEvents(), &Common::enabledWidgets },
-            { Transported::widgets, widx::tab_transported, Transported::getEvents(), &Common::enabledWidgets }
+            { Industry::widgets, widx::tab_industry, Industry::getEvents() },
+            { Production2::widgets, widx::tab_production, Production::getEvents() },
+            { Production2::widgets, widx::tab_production_2, Production2::getEvents() },
+            { Transported::widgets, widx::tab_transported, Transported::getEvents() }
         };
 
         static void setDisabledWidgets(Window* self)
@@ -698,7 +692,7 @@ namespace OpenLoco::Ui::Windows::Industry
         }
 
         // 0x004565B5, 0x00456505
-        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex)
+        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
         {
             switch (widgetIndex)
             {
@@ -746,7 +740,7 @@ namespace OpenLoco::Ui::Windows::Industry
         }
 
         // 0x00455CBC
-        static void textInput(Window& self, WidgetIndex_t callingWidget, const char* input)
+        static void textInput(Window& self, WidgetIndex_t callingWidget, [[maybe_unused]] const WidgetId id, const char* input)
         {
             if (callingWidget != Common::widx::caption)
             {
@@ -827,7 +821,6 @@ namespace OpenLoco::Ui::Windows::Industry
 
             auto tabInfo = tabInformationByTabOffset[widgetIndex - widx::tab_industry];
 
-            self->enabledWidgets = *tabInfo.enabledWidgets;
             self->holdableWidgets = 0;
             self->eventHandlers = &tabInfo.events;
             self->activatedWidgets = 0;

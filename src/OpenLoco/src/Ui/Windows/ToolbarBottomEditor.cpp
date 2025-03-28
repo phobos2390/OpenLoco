@@ -120,7 +120,7 @@ namespace OpenLoco::Ui::Windows::ToolbarBottom::Editor
     }
 
     // 0x0043D0ED
-    static void onMouseUp(Window&, WidgetIndex_t i)
+    static void onMouseUp(Window&, WidgetIndex_t i, [[maybe_unused]] const WidgetId id)
     {
         switch (i)
         {
@@ -159,7 +159,6 @@ namespace OpenLoco::Ui::Windows::ToolbarBottom::Editor
             getEvents());
 
         window->setWidgets(_widgets);
-        window->enabledWidgets = 1 << widx::previous_button | 1 << widx::previous_frame | 1 << widx::next_frame | 1 << widx::next_button;
         window->var_854 = 0;
         window->initScrollWidgets();
         window->setColour(WindowColour::primary, AdvancedColour(Colour::mutedSeaGreen).translucent());

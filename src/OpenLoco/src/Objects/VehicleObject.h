@@ -150,9 +150,9 @@ namespace OpenLoco
         none = 0U,
         hasSprites = 1U << 0,         // If not set then no body will be loaded
         rotationalSymmetry = 1U << 1, // requires half the number of sprites i.e. 32 instead of 64
-        hasUnkSprites = 1U << 2,
-        hasGentleSprites = 1U << 3, // for gentle slopes
-        hasSteepSprites = 1U << 4,  // for steep slopes
+        flag02Deprecated = 1U << 2,   // incomplete feature of vanilla. Do not repurpose until new object format
+        hasGentleSprites = 1U << 3,   // for gentle slopes
+        hasSteepSprites = 1U << 4,    // for steep slopes
         hasBrakingLights = 1U << 5,
         hasSpeedAnimation = 1U << 6, // Speed based animation (such as hydrofoil)
     };
@@ -232,6 +232,7 @@ namespace OpenLoco
         static constexpr auto kObjectType = ObjectType::vehicle;
         static constexpr auto kMaxBodySprites = 4;
         static constexpr auto kMaxCarComponents = 4;
+        static constexpr auto kMaxStartSounds = 3;
 
         StringId name;      // 0x00
         TransportMode mode; // 0x02
@@ -273,8 +274,8 @@ namespace OpenLoco
             VehicleGearboxMotorSound gearboxMotor;
         } sound;
         uint8_t pad_135[0x15A - 0x135];
-        uint8_t numStartSounds;         // 0x15A use mask when accessing kHasCrossingWhistle stuffed in (1 << 7)
-        SoundObjectId_t startSounds[3]; // 0x15B sound array length numStartSounds highest sound is the crossing whistle
+        uint8_t numStartSounds;                       // 0x15A use mask when accessing kHasCrossingWhistle stuffed in (1 << 7)
+        SoundObjectId_t startSounds[kMaxStartSounds]; // 0x15B sound array length numStartSounds highest sound is the crossing whistle
 
         void drawPreviewImage(Gfx::DrawingContext& drawingCtx, const int16_t x, const int16_t y) const;
         void drawDescription(Gfx::DrawingContext& drawingCtx, const int16_t x, const int16_t y, const int16_t width) const;

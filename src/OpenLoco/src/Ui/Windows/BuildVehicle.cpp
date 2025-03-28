@@ -315,7 +315,6 @@ namespace OpenLoco::Ui::Windows::BuildVehicle
         auto window = WindowManager::createWindow(WindowType::buildVehicle, kWindowSize, WindowFlags::flag_11, getEvents());
         window->setWidgets(_widgets);
         window->number = enumValue(company);
-        window->enabledWidgets = (1ULL << widx::close_button) | (1ULL << widx::tab_build_new_trains) | (1ULL << widx::tab_build_new_buses) | (1ULL << widx::tab_build_new_trucks) | (1ULL << widx::tab_build_new_trams) | (1ULL << widx::tab_build_new_aircraft) | (1ULL << widx::tab_build_new_ships) | (1ULL << widx::tab_track_type_0) | (1ULL << widx::tab_track_type_1) | (1ULL << widx::tab_track_type_2) | (1ULL << widx::tab_track_type_3) | (1ULL << widx::tab_track_type_4) | (1ULL << widx::tab_track_type_5) | (1ULL << widx::tab_track_type_6) | (1ULL << widx::tab_track_type_7) | (1ULL << widx::searchClearButton) | (1ULL << widx::filterLabel) | (1ULL << widx::filterDropdown) | (1ULL << widx::cargoLabel) | (1ULL << widx::cargoDropdown) | (1ULL << widx::scrollview_vehicle_selection);
         window->owner = CompanyManager::getControllingId();
         window->frameNo = 0;
         auto skin = OpenLoco::ObjectManager::get<InterfaceSkinObject>();
@@ -351,7 +350,7 @@ namespace OpenLoco::Ui::Windows::BuildVehicle
                 // Not a vehicle but a type
                 tab += vehicle;
             }
-            window->callOnMouseUp(tab);
+            window->callOnMouseUp(tab, window->widgets[tab].id);
 
             if (tabMode)
             {
@@ -390,7 +389,6 @@ namespace OpenLoco::Ui::Windows::BuildVehicle
             window->rowHover = -1;
             window->invalidate();
             window->setWidgets(_widgets);
-            window->enabledWidgets = (1ULL << widx::close_button) | (1ULL << widx::tab_build_new_trains) | (1ULL << widx::tab_build_new_buses) | (1ULL << widx::tab_build_new_trucks) | (1ULL << widx::tab_build_new_trams) | (1ULL << widx::tab_build_new_aircraft) | (1ULL << widx::tab_build_new_ships) | (1ULL << widx::tab_track_type_0) | (1ULL << widx::tab_track_type_1) | (1ULL << widx::tab_track_type_2) | (1ULL << widx::tab_track_type_3) | (1ULL << widx::tab_track_type_4) | (1ULL << widx::tab_track_type_5) | (1ULL << widx::tab_track_type_6) | (1ULL << widx::tab_track_type_7) | (1ULL << widx::searchClearButton) | (1ULL << widx::filterLabel) | (1ULL << widx::filterDropdown) | (1ULL << widx::cargoLabel) | (1ULL << widx::cargoDropdown) | (1ULL << widx::scrollview_vehicle_selection);
             window->holdableWidgets = 0;
             window->eventHandlers = &getEvents();
             window->activatedWidgets = 0;
@@ -436,7 +434,7 @@ namespace OpenLoco::Ui::Windows::BuildVehicle
             }
         }
 
-        window->callOnMouseUp(widgetIndex);
+        window->callOnMouseUp(widgetIndex, window->widgets[widgetIndex].id);
         return window;
     }
 
@@ -718,7 +716,7 @@ namespace OpenLoco::Ui::Windows::BuildVehicle
     }
 
     // 0x4C3576
-    static void onMouseUp(Ui::Window& window, WidgetIndex_t widgetIndex)
+    static void onMouseUp(Ui::Window& window, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         switch (widgetIndex)
         {
@@ -757,7 +755,6 @@ namespace OpenLoco::Ui::Windows::BuildVehicle
                     curViewport->width = 0;
                 }
 
-                window.enabledWidgets = (1 << widx::close_button) | (1 << widx::tab_build_new_trains) | (1 << widx::tab_build_new_buses) | (1 << widx::tab_build_new_trucks) | (1 << widx::tab_build_new_trams) | (1 << widx::tab_build_new_aircraft) | (1 << widx::tab_build_new_ships) | (1 << widx::tab_track_type_0) | (1 << widx::tab_track_type_1) | (1 << widx::tab_track_type_2) | (1 << widx::tab_track_type_3) | (1 << widx::tab_track_type_4) | (1 << widx::tab_track_type_5) | (1 << widx::tab_track_type_6) | (1 << widx::tab_track_type_7) | (1ULL << widx::searchClearButton) | (1ULL << widx::filterLabel) | (1ULL << widx::filterDropdown) | (1ULL << widx::cargoLabel) | (1ULL << widx::cargoDropdown) | (1 << widx::scrollview_vehicle_selection);
                 window.holdableWidgets = 0;
                 window.eventHandlers = &getEvents();
                 window.setWidgets(_widgets);
@@ -819,7 +816,7 @@ namespace OpenLoco::Ui::Windows::BuildVehicle
         }
     }
 
-    static void onMouseDown(Window& self, const WidgetIndex_t widgetIndex)
+    static void onMouseDown(Window& self, const WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         if (widgetIndex == widx::filterDropdown)
         {
@@ -915,7 +912,7 @@ namespace OpenLoco::Ui::Windows::BuildVehicle
         }
     }
 
-    static void onDropdown(Window& self, WidgetIndex_t widgetIndex, int16_t itemIndex)
+    static void onDropdown(Window& self, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id, int16_t itemIndex)
     {
         if (itemIndex < 0)
         {
@@ -1106,7 +1103,7 @@ namespace OpenLoco::Ui::Windows::BuildVehicle
     }
 
     // 0x4C370C
-    static std::optional<FormatArguments> tooltip(Ui::Window& window, WidgetIndex_t widgetIndex)
+    static std::optional<FormatArguments> tooltip(Ui::Window& window, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         FormatArguments args{};
         if (widgetIndex < widx::tab_track_type_0 || widgetIndex >= widx::scrollview_vehicle_selection)
@@ -1149,7 +1146,7 @@ namespace OpenLoco::Ui::Windows::BuildVehicle
     }
 
     // 0x4C37CB
-    static Ui::CursorId cursor(Window& window, WidgetIndex_t widgetIdx, [[maybe_unused]] int16_t xPos, int16_t yPos, Ui::CursorId fallback)
+    static Ui::CursorId cursor(Window& window, WidgetIndex_t widgetIdx, [[maybe_unused]] const WidgetId id, [[maybe_unused]] int16_t xPos, int16_t yPos, Ui::CursorId fallback)
     {
         if (widgetIdx != widx::scrollview_vehicle_selection)
         {

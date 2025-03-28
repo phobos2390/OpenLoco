@@ -53,8 +53,6 @@ namespace OpenLoco::Ui::Windows::NetworkStatus
             getEvents());
 
         window->setWidgets(widgets);
-        window->enabledWidgets = (1 << Widx::closeBtn);
-
         window->initScrollWidgets();
         window->setColour(WindowColour::primary, Colour::black);
         window->setColour(WindowColour::secondary, Colour::black);
@@ -89,7 +87,7 @@ namespace OpenLoco::Ui::Windows::NetworkStatus
         }
     }
 
-    static void onMouseUp(Ui::Window& window, WidgetIndex_t widgetIndex)
+    static void onMouseUp(Ui::Window& window, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         switch (widgetIndex)
         {

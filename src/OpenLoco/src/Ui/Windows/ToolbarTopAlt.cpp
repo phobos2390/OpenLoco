@@ -77,7 +77,6 @@ namespace OpenLoco::Ui::Windows::ToolbarTop::Editor
             WindowFlags::stickToFront | WindowFlags::transparent | WindowFlags::noBackground,
             getEvents());
         window->setWidgets(_widgets);
-        window->enabledWidgets = (1 << Common::Widx::loadsave_menu) | (1 << Common::Widx::audio_menu) | (1 << Common::Widx::zoom_menu) | (1 << Common::Widx::rotate_menu) | (1 << Common::Widx::view_menu) | (1 << Common::Widx::terraform_menu) | (1 << Widx::map_generation_menu) | (1 << Common::Widx::road_menu) | (1 << Common::Widx::towns_menu);
         window->initScrollWidgets();
         window->setColour(WindowColour::primary, Colour::grey);
         window->setColour(WindowColour::secondary, Colour::grey);
@@ -246,7 +245,7 @@ namespace OpenLoco::Ui::Windows::ToolbarTop::Editor
     }
 
     // 0x0043D541
-    static void onMouseDown(Window& window, WidgetIndex_t widgetIndex)
+    static void onMouseDown(Window& window, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         switch (widgetIndex)
         {
@@ -269,7 +268,7 @@ namespace OpenLoco::Ui::Windows::ToolbarTop::Editor
     }
 
     // 0x0043D5A6
-    static void onDropdown(Window& window, WidgetIndex_t widgetIndex, int16_t itemIndex)
+    static void onDropdown(Window& window, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id, int16_t itemIndex)
     {
         switch (widgetIndex)
         {
@@ -343,7 +342,7 @@ namespace OpenLoco::Ui::Windows::ToolbarTop::Editor
 
     static constexpr WindowEventList kEvents = {
         .onResize = Common::onResize,
-        .event_03 = onMouseDown,
+        .onMouseHover = onMouseDown,
         .onMouseDown = onMouseDown,
         .onDropdown = onDropdown,
         .onUpdate = Common::onUpdate,

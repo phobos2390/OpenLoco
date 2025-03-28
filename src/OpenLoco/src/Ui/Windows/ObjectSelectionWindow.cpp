@@ -380,7 +380,7 @@ namespace OpenLoco::Ui::Windows::ObjectSelectionWindow
             auto widgetIndex = widx::primaryTab1 + i;
             if (shouldShowPrimaryTab(i, FilterLevel(self->filterLevel)))
             {
-                self->enabledWidgets |= 1ULL << widgetIndex;
+                self->disabledWidgets &= ~(1ULL << widgetIndex);
                 self->widgets[widgetIndex].hidden = false;
                 self->widgets[widgetIndex].left = xPos;
                 self->widgets[widgetIndex].right = xPos + 31;
@@ -388,7 +388,7 @@ namespace OpenLoco::Ui::Windows::ObjectSelectionWindow
             }
             else
             {
-                self->enabledWidgets &= ~(1ULL << widgetIndex);
+                self->disabledWidgets |= (1ULL << widgetIndex);
                 self->widgets[widgetIndex].hidden = true;
             }
         }
@@ -523,7 +523,6 @@ namespace OpenLoco::Ui::Windows::ObjectSelectionWindow
 
         window = WindowManager::createWindowCentred(WindowType::objectSelection, { kWindowSize }, WindowFlags::none, getEvents());
         window->setWidgets(widgets);
-        window->enabledWidgets = (1ULL << widx::closeButton) | (1ULL << widx::filterLabel) | (1ULL << widx::filterDropdown) | (1ULL << widx::clearButton);
         window->initScrollWidgets();
         window->frameNo = 0;
         window->rowHover = -1;
@@ -601,22 +600,13 @@ namespace OpenLoco::Ui::Windows::ObjectSelectionWindow
             const auto widgetIndex = i + widx::secondaryTab1;
 
             const bool subTabIsVisible = showSecondaryTabs && i < subTabs.size() && shouldShowSubTab(subTabs, i, FilterLevel(self.filterLevel));
-            if (!subTabIsVisible)
-            {
-                self.disabledWidgets |= 1ULL << widgetIndex;
-            }
-            else
+            if (subTabIsVisible)
             {
                 self.disabledWidgets &= ~(1ULL << widgetIndex);
             }
-
-            if (subTabIsVisible)
-            {
-                self.enabledWidgets |= 1ULL << widgetIndex;
-            }
             else
             {
-                self.enabledWidgets &= ~(1ULL << widgetIndex);
+                self.disabledWidgets |= (1ULL << widgetIndex);
             }
 
             if (self.currentSecondaryTab == i)
@@ -1329,7 +1319,7 @@ namespace OpenLoco::Ui::Windows::ObjectSelectionWindow
     }
 
     // 0x004737BA
-    static void onMouseUp(Window& self, WidgetIndex_t widgetIndex)
+    static void onMouseUp(Window& self, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         switch (widgetIndex)
         {
@@ -1394,7 +1384,7 @@ namespace OpenLoco::Ui::Windows::ObjectSelectionWindow
         }
     }
 
-    static void onMouseDown(Window& self, const WidgetIndex_t widgetIndex)
+    static void onMouseDown(Window& self, const WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         if (widgetIndex == widx::filterDropdown)
         {
@@ -1432,7 +1422,7 @@ namespace OpenLoco::Ui::Windows::ObjectSelectionWindow
         }
     }
 
-    static void onDropdown(Window& self, WidgetIndex_t widgetIndex, int16_t itemIndex)
+    static void onDropdown(Window& self, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id, int16_t itemIndex)
     {
         if (widgetIndex != widx::filterDropdown)
         {
@@ -1492,7 +1482,7 @@ namespace OpenLoco::Ui::Windows::ObjectSelectionWindow
     }
 
     // 0x00473900
-    static std::optional<FormatArguments> tooltip([[maybe_unused]] Ui::Window& window, [[maybe_unused]] WidgetIndex_t widgetIndex)
+    static std::optional<FormatArguments> tooltip([[maybe_unused]] Ui::Window& window, [[maybe_unused]] WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         FormatArguments args{};
         args.push(StringIds::tooltip_object_list);

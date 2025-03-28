@@ -48,8 +48,6 @@ namespace OpenLoco::Ui::Windows::MessageWindow
             tab_settings,
         };
 
-        const uint64_t enabledWidgets = (1 << widx::close_button) | (1 << widx::tab_messages) | (1 << widx::tab_settings);
-
         static constexpr auto makeCommonWidgets(int32_t frameWidth, int32_t frameHeight, StringId windowCaptionId)
         {
             return makeWidgets(
@@ -78,8 +76,6 @@ namespace OpenLoco::Ui::Windows::MessageWindow
             scrollview = 6,
         };
 
-        const uint64_t enabledWidgets = Common::enabledWidgets | (1 << scrollview);
-
         static constexpr auto widgets = makeWidgets(
             Common::makeCommonWidgets(366, 217, StringIds::title_messages),
             Widgets::ScrollView({ 3, 45 }, { 360, 146 }, WindowColour::secondary, Scrollbars::vertical)
@@ -87,7 +83,7 @@ namespace OpenLoco::Ui::Windows::MessageWindow
         );
 
         // 0x0042A6F5
-        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex)
+        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
         {
             switch (widgetIndex)
             {
@@ -205,7 +201,7 @@ namespace OpenLoco::Ui::Windows::MessageWindow
         }
 
         // 0x0042A70C
-        static std::optional<FormatArguments> tooltip([[maybe_unused]] Ui::Window& self, [[maybe_unused]] WidgetIndex_t widgetIndex)
+        static std::optional<FormatArguments> tooltip([[maybe_unused]] Ui::Window& self, [[maybe_unused]] WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
         {
             FormatArguments args{};
             args.push(StringIds::tooltip_scroll_message_list);
@@ -345,7 +341,6 @@ namespace OpenLoco::Ui::Windows::MessageWindow
                 WindowFlags::flag_11,
                 Messages::getEvents());
 
-            window->enabledWidgets = Messages::enabledWidgets;
             window->number = 0;
             window->currentTab = 0;
             window->frameNo = 0;
@@ -372,7 +367,6 @@ namespace OpenLoco::Ui::Windows::MessageWindow
         window->invalidate();
 
         window->setWidgets(Messages::widgets);
-        window->enabledWidgets = Messages::enabledWidgets;
         window->holdableWidgets = 0;
         window->eventHandlers = &Messages::getEvents();
         window->disabledWidgets = 0;
@@ -431,8 +425,6 @@ namespace OpenLoco::Ui::Windows::MessageWindow
             playSoundEffects,
         };
 
-        static constexpr uint64_t enabledWidgets = Common::enabledWidgets | (1 << widx::company_major_news) | (1 << widx::company_major_news_dropdown) | (1 << widx::competitor_major_news) | (1 << widx::competitor_major_news_dropdown) | (1 << widx::company_minor_news) | (1 << widx::company_minor_news_dropdown) | (1 << widx::competitor_minor_news) | (1 << widx::competitor_minor_news_dropdown) | (1 << widx::general_news) | (1 << widx::general_news_dropdown) | (1 << widx::advice) | (1 << widx::advice_dropdown) | (1 << widx::playSoundEffects);
-
         static constexpr auto widgets = makeWidgets(
             Common::makeCommonWidgets(366, 155, StringIds::title_messages),
 
@@ -459,7 +451,7 @@ namespace OpenLoco::Ui::Windows::MessageWindow
         );
 
         // 0x0042AA84
-        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex)
+        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
         {
             switch (widgetIndex)
             {
@@ -489,7 +481,7 @@ namespace OpenLoco::Ui::Windows::MessageWindow
         };
 
         // 0x0042AA9F
-        static void onMouseDown(Window& self, WidgetIndex_t widgetIndex)
+        static void onMouseDown(Window& self, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
         {
             switch (widgetIndex)
             {
@@ -524,7 +516,7 @@ namespace OpenLoco::Ui::Windows::MessageWindow
         }
 
         // 0x0042AAAC
-        static void onDropdown([[maybe_unused]] Window& self, Ui::WidgetIndex_t widgetIndex, int16_t itemIndex)
+        static void onDropdown([[maybe_unused]] Window& self, Ui::WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id, int16_t itemIndex)
         {
             switch (widgetIndex)
             {
@@ -615,12 +607,11 @@ namespace OpenLoco::Ui::Windows::MessageWindow
             std::span<const Widget> widgets;
             const widx widgetIndex;
             const WindowEventList& events;
-            const uint64_t enabledWidgets;
         };
 
         static TabInformation tabInformationByTabOffset[] = {
-            { Messages::widgets, widx::tab_messages, Messages::getEvents(), Messages::enabledWidgets },
-            { Settings::widgets, widx::tab_settings, Settings::getEvents(), Settings::enabledWidgets },
+            { Messages::widgets, widx::tab_messages, Messages::getEvents() },
+            { Settings::widgets, widx::tab_settings, Settings::getEvents() },
         };
 
         static void prepareDraw(Window& self)
@@ -657,7 +648,6 @@ namespace OpenLoco::Ui::Windows::MessageWindow
 
             const auto& tabInfo = tabInformationByTabOffset[widgetIndex - widx::tab_messages];
 
-            self->enabledWidgets = tabInfo.enabledWidgets;
             self->holdableWidgets = 0;
             self->eventHandlers = &tabInfo.events;
             self->activatedWidgets = 0;

@@ -43,8 +43,6 @@ namespace OpenLoco::Ui::Windows::TitleExit
             getEvents());
 
         window->setWidgets(_widgets);
-        window->enabledWidgets = (1 << Widx::exit_button);
-
         window->initScrollWidgets();
 
         window->setColour(WindowColour::primary, AdvancedColour(Colour::mutedSeaGreen).translucent());
@@ -77,7 +75,7 @@ namespace OpenLoco::Ui::Windows::TitleExit
     }
 
     // 0x00439268
-    static void onMouseUp([[maybe_unused]] Window& window, WidgetIndex_t widgetIndex)
+    static void onMouseUp([[maybe_unused]] Window& window, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         if (Intro::isActive())
         {

@@ -36,8 +36,6 @@ namespace OpenLoco::Ui::Windows::NewsWindow
             Common::getEvents());
 
         window->setWidgets(widgets);
-        window->enabledWidgets = Common::enabledWidgets;
-
         window->initScrollWidgets();
         window->setColour(WindowColour::primary, colour);
 
@@ -107,8 +105,6 @@ namespace OpenLoco::Ui::Windows::NewsWindow
                     Ticker::getEvents());
 
                 window->setWidgets(Ticker::getWidgets());
-                window->enabledWidgets = Ticker::enabledWidgets;
-
                 window->initScrollWidgets();
 
                 auto skin = ObjectManager::get<InterfaceSkinObject>();
@@ -187,6 +183,6 @@ namespace OpenLoco::Ui::Windows::NewsWindow
     void close(Window* self)
     {
         // Only affects the newspaper view; the ticker ignores this widget
-        self->callOnMouseUp(1);
+        self->callOnMouseUp(Common::close_button, self->widgets[Common::close_button].id);
     }
 }

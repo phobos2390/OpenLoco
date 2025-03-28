@@ -707,8 +707,7 @@ namespace OpenLoco::World::TileManager
         }
         catch (const std::bad_alloc&)
         {
-            Ui::showMessageBox("Bad Alloc", "Bad memory allocation, exiting");
-            exitWithError(4370, StringIds::null);
+            exitWithError(StringIds::unable_to_allocate_enough_memory, StringIds::game_init_failure);
         }
 
         // Note: original implementation did not revert the cursor
@@ -1245,9 +1244,9 @@ namespace OpenLoco::World::TileManager
         {
             return;
         }
-        if (surface.var_6_SLR5() > 0)
+        if (surface.getGrowthStage() > 0)
         {
-            surface.setVar6SLR5(0);
+            surface.setGrowthStage(0);
             surface.setSnowCoverage(0);
 
             Ui::ViewportManager::invalidate(pos, surface.baseHeight(), surface.baseHeight() + 32, ZoomLevel::eighth);

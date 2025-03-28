@@ -58,8 +58,6 @@ namespace OpenLoco::Ui::Windows::Station
             tab_cargo_ratings,
         };
 
-        const uint64_t enabledWidgets = (1 << widx::caption) | (1 << widx::close_button) | (1 << widx::tab_station) | (1 << widx::tab_cargo) | (1 << widx::tab_cargo_ratings);
-
         static constexpr auto makeCommonWidgets(int32_t frameWidth, int32_t frameHeight)
         {
             return makeWidgets(
@@ -74,7 +72,7 @@ namespace OpenLoco::Ui::Windows::Station
 
         // Defined at the bottom of this file.
         static void prepareDraw(Window& self);
-        static void textInput(Window& self, WidgetIndex_t callingWidget, const char* input);
+        static void textInput(Window& self, WidgetIndex_t callingWidget, [[maybe_unused]] const WidgetId id, const char* input);
         static void update(Window& self);
         static void renameStationPrompt(Window* self, WidgetIndex_t widgetIndex);
         static void switchTab(Window* self, WidgetIndex_t widgetIndex);
@@ -101,8 +99,6 @@ namespace OpenLoco::Ui::Windows::Station
             Widgets::ImageButton({ 0, 0 }, { 24, 24 }, WindowColour::secondary, ImageIds::centre_viewport, StringIds::move_main_view_to_show_this)
 
         );
-
-        const uint64_t enabledWidgets = Common::enabledWidgets | (1 << centre_on_viewport);
 
         // 0x0048E352
         static void prepareDraw(Window& self)
@@ -146,7 +142,7 @@ namespace OpenLoco::Ui::Windows::Station
         }
 
         // 0x0048E4D4
-        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex)
+        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
         {
             switch (widgetIndex)
             {
@@ -320,7 +316,6 @@ namespace OpenLoco::Ui::Windows::Station
         window->invalidate();
 
         window->setWidgets(Station::widgets);
-        window->enabledWidgets = Station::enabledWidgets;
         window->holdableWidgets = 0;
         window->eventHandlers = &Station::getEvents();
         window->activatedWidgets = 0;
@@ -352,8 +347,6 @@ namespace OpenLoco::Ui::Windows::Station
             Widgets::ImageButton({ 198, 44 }, { 24, 24 }, WindowColour::secondary, ImageIds::show_station_catchment, StringIds::station_catchment)
 
         );
-
-        const uint64_t enabledWidgets = Common::enabledWidgets | (1 << station_catchment);
 
         // 0x0048E7C0
         static void prepareDraw(Window& self)
@@ -425,7 +418,7 @@ namespace OpenLoco::Ui::Windows::Station
         }
 
         // 0x0048EB0B
-        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex)
+        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
         {
             switch (widgetIndex)
             {
@@ -484,7 +477,7 @@ namespace OpenLoco::Ui::Windows::Station
         }
 
         // 0x0048EB4F
-        static std::optional<FormatArguments> tooltip([[maybe_unused]] Ui::Window& window, [[maybe_unused]] WidgetIndex_t widgetIndex)
+        static std::optional<FormatArguments> tooltip([[maybe_unused]] Ui::Window& window, [[maybe_unused]] WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
         {
             FormatArguments args{};
             args.push(StringIds::tooltip_scroll_cargo_list);
@@ -656,7 +649,7 @@ namespace OpenLoco::Ui::Windows::Station
         }
 
         // 0x0048EE1A
-        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex)
+        static void onMouseUp(Window& self, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
         {
             switch (widgetIndex)
             {
@@ -699,7 +692,7 @@ namespace OpenLoco::Ui::Windows::Station
         }
 
         // 0x0048EE73
-        static std::optional<FormatArguments> tooltip([[maybe_unused]] Ui::Window& window, [[maybe_unused]] WidgetIndex_t widgetIndex)
+        static std::optional<FormatArguments> tooltip([[maybe_unused]] Ui::Window& window, [[maybe_unused]] WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
         {
             FormatArguments args{};
             args.push(StringIds::tooltip_scroll_ratings_list);
@@ -853,14 +846,13 @@ namespace OpenLoco::Ui::Windows::Station
             std::span<const Widget> widgets;
             const widx widgetIndex;
             const WindowEventList& events;
-            const uint64_t* enabledWidgets;
         };
 
         // clang-format off
         static TabInformation tabInformationByTabOffset[] = {
-            { Station::widgets,      widx::tab_station,       Station::getEvents(),      &Station::enabledWidgets },
-            { Cargo::widgets,        widx::tab_cargo,         Cargo::getEvents(),        &Cargo::enabledWidgets },
-            { CargoRatings::widgets, widx::tab_cargo_ratings, CargoRatings::getEvents(), &Common::enabledWidgets }
+            { Station::widgets,      widx::tab_station,       Station::getEvents()      },
+            { Cargo::widgets,        widx::tab_cargo,         Cargo::getEvents()        },
+            { CargoRatings::widgets, widx::tab_cargo_ratings, CargoRatings::getEvents() }
         };
         // clang-format on
 
@@ -894,7 +886,7 @@ namespace OpenLoco::Ui::Windows::Station
         }
 
         // 0x0048E5DF
-        static void textInput(Window& self, WidgetIndex_t callingWidget, const char* input)
+        static void textInput(Window& self, WidgetIndex_t callingWidget, [[maybe_unused]] const WidgetId id, const char* input)
         {
             if (callingWidget != Common::widx::caption)
             {
@@ -967,7 +959,6 @@ namespace OpenLoco::Ui::Windows::Station
 
             auto tabInfo = tabInformationByTabOffset[widgetIndex - widx::tab_station];
 
-            self->enabledWidgets = *tabInfo.enabledWidgets;
             self->holdableWidgets = 0;
             self->eventHandlers = &tabInfo.events;
             self->activatedWidgets = 0;
@@ -1069,11 +1060,11 @@ namespace OpenLoco::Ui::Windows::Station
             {
                 if (CompanyManager::isPlayerCompany(station->owner))
                 {
-                    self->enabledWidgets |= (1 << Common::widx::caption);
+                    self->disabledWidgets &= ~(1 << Common::widx::caption);
                 }
                 else
                 {
-                    self->enabledWidgets &= ~(1 << Common::widx::caption);
+                    self->disabledWidgets |= (1 << Common::widx::caption);
                 }
             }
         }

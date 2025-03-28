@@ -13,6 +13,7 @@
 #include "Localisation/FormatArguments.hpp"
 #include "Localisation/StringIds.h"
 #include "Map/RoadElement.h"
+#include "Map/Track/TrackModSection.h"
 #include "Map/TrackElement.h"
 #include "Objects/ObjectManager.h"
 #include "Objects/RoadExtraObject.h"
@@ -52,7 +53,7 @@ namespace OpenLoco::Ui::Windows::Construction::Overhead
     WindowEventList events;
 
     // 0x0049EBD1
-    static void onMouseUp(Window& self, WidgetIndex_t widgetIndex)
+    static void onMouseUp(Window& self, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         switch (widgetIndex)
         {
@@ -86,7 +87,7 @@ namespace OpenLoco::Ui::Windows::Construction::Overhead
     }
 
     // 0x0049EBFC
-    static void onMouseDown(Window& self, WidgetIndex_t widgetIndex)
+    static void onMouseDown(Window& self, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         switch (widgetIndex)
         {
@@ -106,7 +107,7 @@ namespace OpenLoco::Ui::Windows::Construction::Overhead
                 Dropdown::add(1, StringIds::block_section);
                 Dropdown::add(2, StringIds::all_connected_track);
 
-                Dropdown::setHighlightedItem(_cState->lastSelectedTrackModSection);
+                Dropdown::setHighlightedItem(enumValue(_cState->lastSelectedTrackModSection));
                 break;
             }
 
@@ -120,7 +121,7 @@ namespace OpenLoco::Ui::Windows::Construction::Overhead
     }
 
     // 0x0049EC09
-    static void onDropdown(Window& self, WidgetIndex_t widgetIndex, int16_t itemIndex)
+    static void onDropdown(Window& self, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id, int16_t itemIndex)
     {
         if (widgetIndex != widx::track_dropdown)
         {
@@ -129,7 +130,7 @@ namespace OpenLoco::Ui::Windows::Construction::Overhead
 
         if (itemIndex != -1)
         {
-            _cState->lastSelectedTrackModSection = itemIndex;
+            _cState->lastSelectedTrackModSection = static_cast<Track::ModSection>(itemIndex);
             self.invalidate();
         }
     }
@@ -262,7 +263,7 @@ namespace OpenLoco::Ui::Windows::Construction::Overhead
     }
 
     // 0x0049EC15
-    static void onToolUpdate(Window& self, const WidgetIndex_t widgetIndex, const int16_t x, const int16_t y)
+    static void onToolUpdate(Window& self, const WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id, const int16_t x, const int16_t y)
     {
         if (widgetIndex != widx::image)
         {
@@ -342,7 +343,7 @@ namespace OpenLoco::Ui::Windows::Construction::Overhead
     }
 
     // 0x0049EC20
-    static void onToolDown([[maybe_unused]] Window& self, const WidgetIndex_t widgetIndex, const int16_t x, const int16_t y)
+    static void onToolDown([[maybe_unused]] Window& self, const WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id, const int16_t x, const int16_t y)
     {
         if (widgetIndex != widx::image)
         {
@@ -484,7 +485,7 @@ namespace OpenLoco::Ui::Windows::Construction::Overhead
             StringIds::all_connected_track,
         };
 
-        self.widgets[widx::track].text = modString[_cState->lastSelectedTrackModSection];
+        self.widgets[widx::track].text = modString[enumValue(_cState->lastSelectedTrackModSection)];
 
         Common::repositionTabs(&self);
     }
@@ -551,7 +552,7 @@ namespace OpenLoco::Ui::Windows::Construction::Overhead
 
     void tabReset(Window* self)
     {
-        self->callOnMouseDown(Overhead::widx::image);
+        self->callOnMouseDown(Overhead::widx::image, self->widgets[Overhead::widx::image].id);
     }
 
     static constexpr WindowEventList kEvents = {

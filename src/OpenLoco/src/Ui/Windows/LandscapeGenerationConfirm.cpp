@@ -58,7 +58,7 @@ namespace OpenLoco::Ui::Windows::LandscapeGenerationConfirm
     }
 
     // 0x004C18E4
-    static void onMouseUp(Window& window, WidgetIndex_t widgetIndex)
+    static void onMouseUp(Window& window, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         switch (widgetIndex)
         {
@@ -101,7 +101,6 @@ namespace OpenLoco::Ui::Windows::LandscapeGenerationConfirm
         {
             window = WindowManager::createWindowCentred(WindowType::landscapeGenerationConfirm, kWindowSize, WindowFlags::none, getEvents());
             window->setWidgets(widgets);
-            window->enabledWidgets = (1 << widx::close_button) | (1 << widx::button_ok) | (1 << widx::button_cancel);
             window->initScrollWidgets();
             window->setColour(WindowColour::primary, AdvancedColour(Colour::mutedDarkRed).translucent());
             window->setColour(WindowColour::secondary, AdvancedColour(Colour::mutedDarkRed).translucent());

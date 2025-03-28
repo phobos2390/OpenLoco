@@ -35,8 +35,6 @@ namespace OpenLoco::Ui::Windows::TitleLogo
             getEvents());
 
         window->setWidgets(_widgets);
-        window->enabledWidgets = 1 << Widx::logo;
-
         window->initScrollWidgets();
 
         window->setColour(WindowColour::primary, AdvancedColour(Colour::grey).translucent());
@@ -52,7 +50,7 @@ namespace OpenLoco::Ui::Windows::TitleLogo
     }
 
     // 0x004392AD
-    static void onMouseUp([[maybe_unused]] Window& window, WidgetIndex_t widgetIndex)
+    static void onMouseUp([[maybe_unused]] Window& window, WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
     {
         switch (widgetIndex)
         {
