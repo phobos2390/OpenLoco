@@ -33,6 +33,7 @@
 #include "Ui/Widget.h"
 #include "Ui/Widgets/DropdownWidget.h"
 #include "Ui/Widgets/ImageButtonWidget.h"
+#include "Ui/Widgets/Wt3Widget.h"
 #include "World/CompanyManager.h"
 #include "World/Station.h"
 
@@ -53,6 +54,11 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
 
     static loco_global<uint8_t, 0x0112C2E9> _alternateTrackObjectId; // set from GameCommands::createRoad
     static loco_global<uint8_t[18], 0x0050A006> _availableObjects;   // top toolbar
+
+    // TODO: move to ConstructionState when no longer a loco_global?
+    static bool _isDragging = false;
+    static World::TilePos2 _toolPosDrag;
+    static World::TilePos2 _toolPosInitial;
 
     namespace TrackPiece
     {
@@ -114,7 +120,7 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
         Widgets::ImageButton({ 81, 96 }, { 24, 24 }, WindowColour::secondary, ImageIds::construction_slope_up, StringIds::tooltip_slope_up),
         Widgets::ImageButton({ 105, 96 }, { 24, 24 }, WindowColour::secondary, ImageIds::construction_steep_slope_up, StringIds::tooltip_steep_slope_up),
         Widgets::dropdownWidgets({ 40, 123 }, { 58, 20 }, WindowColour::secondary, StringIds::empty, StringIds::tooltip_bridge_stats),
-        Widgets::Tab({ 3, 145 }, { 132, 100 }, WindowColour::secondary, Widget::kContentNull, StringIds::tooltip_construct),
+        Widgets::Wt3Widget({ 3, 145 }, { 132, 100 }, WindowColour::secondary, Widget::kContentNull, StringIds::tooltip_construct),
         Widgets::ImageButton({ 6, 248 }, { 46, 24 }, WindowColour::secondary, ImageIds::construction_remove, StringIds::tooltip_remove),
         Widgets::ImageButton({ 57, 248 }, { 24, 24 }, WindowColour::secondary, ImageIds::rotate_object, StringIds::rotate_90));
 
@@ -315,7 +321,7 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
     }
 
     // 0x0049F92D
-    static void constructTrack([[maybe_unused]] Window* self, [[maybe_unused]] WidgetIndex_t widgetIndex)
+    static void constructTrackOrRoad([[maybe_unused]] Window* self, [[maybe_unused]] WidgetIndex_t widgetIndex)
     {
         if (_cState->trackType & (1 << 7))
         {
@@ -516,11 +522,11 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
             case Common::widx::tab_overhead:
             case Common::widx::tab_signal:
             case Common::widx::tab_station:
-                Common::switchTab(&self, widgetIndex);
+                Common::switchTab(self, widgetIndex);
                 break;
 
             case widx::construct:
-                constructTrack(&self, widgetIndex);
+                constructTrackOrRoad(&self, widgetIndex);
                 break;
 
             case widx::remove:
@@ -539,7 +545,7 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
                 }
                 removeConstructionGhosts();
                 WindowManager::viewportSetVisibility(WindowManager::ViewportVisibility::overgroundView);
-                ToolManager::toolSet(&self, widx::construct, CursorId::crosshair);
+                ToolManager::toolSet(self, widx::construct, CursorId::crosshair);
                 Input::setFlag(Input::Flags::flag6);
 
                 _cState->constructionHover = 1;
@@ -1866,7 +1872,7 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
             {
                 if (Input::getClickRepeatTicks() >= 40)
                 {
-                    constructTrack(&self, widgetIndex);
+                    constructTrackOrRoad(&self, widgetIndex);
                 }
                 break;
             }
@@ -2090,7 +2096,7 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
             activateSelectedConstructionWidgets();
             auto window = WindowManager::find(WindowType::construction);
 
-            // Attempt to place track piece -- in silent
+            // Attempt to place track piece -- in silence
             _suppressErrorSound = true;
             onMouseUp(*window, widx::construct, WidgetId::none);
             _suppressErrorSound = false;
@@ -2468,7 +2474,7 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
 
     // 0x004A1968
     template<typename TGetPieceId, typename TTryMakeJunction, typename TGetPiece, typename GetPlacementArgsFunc, typename PlaceGhostFunc>
-    static void onToolUpdateTrack(const int16_t x, const int16_t y, TGetPieceId&& getPieceId, TTryMakeJunction&& tryMakeJunction, TGetPiece&& getPiece, GetPlacementArgsFunc&& getPlacementArgs, PlaceGhostFunc&& placeGhost)
+    static void onToolUpdateSingle(const int16_t x, const int16_t y, TGetPieceId&& getPieceId, TTryMakeJunction&& tryMakeJunction, TGetPiece&& getPiece, GetPlacementArgsFunc&& getPlacementArgs, PlaceGhostFunc&& placeGhost)
     {
         World::mapInvalidateMapSelectionTiles();
         World::resetMapSelectionFlag(World::MapSelectionFlags::enable | World::MapSelectionFlags::enableConstruct | World::MapSelectionFlags::enableConstructionArrow);
@@ -2543,18 +2549,64 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
             return;
         }
 
+        if (_isDragging)
+        {
+            mapInvalidateMapSelectionTiles();
+            removeConstructionGhosts();
+            return;
+        }
+
         if (_cState->trackType & (1 << 7))
         {
-            onToolUpdateTrack(x, y, getRoadPieceId, tryMakeRoadJunctionAtLoc, TrackData::getRoadPiece, getRoadPlacementArgs, placeRoadGhost);
+            onToolUpdateSingle(x, y, getRoadPieceId, tryMakeRoadJunctionAtLoc, TrackData::getRoadPiece, getRoadPlacementArgs, placeRoadGhost);
         }
         else
         {
-            onToolUpdateTrack(x, y, getTrackPieceId, tryMakeTrackJunctionAtLoc, TrackData::getTrackPiece, getTrackPlacementArgs, placeTrackGhost);
+            onToolUpdateSingle(x, y, getTrackPieceId, tryMakeTrackJunctionAtLoc, TrackData::getTrackPiece, getTrackPlacementArgs, placeTrackGhost);
         }
     }
 
+    static void onToolDown([[maybe_unused]] Window& self, [[maybe_unused]] const WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id, const int16_t x, const int16_t y)
+    {
+        auto res = ViewportInteraction::getMapCoordinatesFromPos(x, y, ~(ViewportInteraction::InteractionItemFlags::surface | ViewportInteraction::InteractionItemFlags::water));
+        auto& interaction = res.first;
+        if (interaction.type == ViewportInteraction::InteractionItem::noInteraction)
+        {
+            return;
+        }
+
+        _toolPosInitial = World::toTileSpace(interaction.pos);
+        _isDragging = false;
+    }
+
+    static void onToolDrag([[maybe_unused]] Window& self, [[maybe_unused]] const WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id, [[maybe_unused]] const int16_t x, [[maybe_unused]] const int16_t y)
+    {
+        mapInvalidateSelectionRect();
+        removeConstructionGhosts();
+
+        auto res = ViewportInteraction::getMapCoordinatesFromPos(x, y, ~(ViewportInteraction::InteractionItemFlags::surface | ViewportInteraction::InteractionItemFlags::water));
+        auto& interaction = res.first;
+        if (interaction.type == ViewportInteraction::InteractionItem::noInteraction)
+        {
+            return;
+        }
+
+        _toolPosDrag = World::toTileSpace(interaction.pos);
+        _isDragging = _toolPosInitial != _toolPosDrag;
+        if (!_isDragging)
+        {
+            return;
+        }
+
+        setMapSelectionFlags(MapSelectionFlags::enable);
+        setMapSelectionCorner(MapSelectionType::full);
+
+        setMapSelectionArea(toWorldSpace(_toolPosInitial), toWorldSpace(_toolPosDrag));
+        mapInvalidateSelectionRect();
+    }
+
     template<typename TGetPieceId, typename TTryMakeJunction, typename TGetPiece>
-    static void onToolDownT(const int16_t x, const int16_t y, TGetPieceId&& getPieceId, TTryMakeJunction&& tryMakeJunction, TGetPiece&& getPiece)
+    static void onToolUpSingle(const int16_t x, const int16_t y, TGetPieceId&& getPieceId, TTryMakeJunction&& tryMakeJunction, TGetPiece&& getPiece)
     {
         mapInvalidateMapSelectionTiles();
         removeConstructionGhosts();
@@ -2622,22 +2674,83 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
         constructionLoop(constructPos, maxRetries, constructHeight);
     }
 
+    static void onToolUpMultiple(Window& self, const WidgetIndex_t widgetIndex)
+    {
+        mapInvalidateSelectionRect();
+        removeConstructionGhosts();
+        World::resetMapSelectionFlags();
+
+        auto rotation = _cState->constructionRotation;
+        auto piece = _cState->lastSelectedTrackPiece;
+
+        auto dirX = _toolPosDrag.x - _toolPosInitial.x > 0 ? 1 : -1;
+        auto dirY = _toolPosDrag.y - _toolPosInitial.y > 0 ? 1 : -1;
+
+        bool builtAnything = false;
+
+        for (auto yPos = _toolPosInitial.y; yPos != _toolPosDrag.y + dirY; yPos += dirY)
+        {
+            for (auto xPos = _toolPosInitial.x; xPos != _toolPosDrag.x + dirX; xPos += dirX)
+            {
+                auto pos = World::toWorldSpace({ xPos, yPos });
+                _cState->x = pos.x;
+                _cState->y = pos.y;
+
+                auto height = TileManager::getHeight(pos);
+                _cState->constructionZ = height.landHeight;
+
+                // Try placing the track at this location, ignoring errors if they occur
+                _suppressErrorSound = true;
+                constructTrackOrRoad(&self, widgetIndex);
+                _suppressErrorSound = false;
+
+                builtAnything |= _cState->dword_1135F42 != GameCommands::FAILURE;
+
+                // Prevent automatic track advancement when constructing track
+                _cState->constructionRotation = rotation;
+                _cState->lastSelectedTrackPiece = piece;
+            }
+        }
+
+        if (builtAnything)
+        {
+            WindowManager::close(WindowType::error);
+        }
+
+        // Leave the tool active, but make ghost piece visible for the next round
+        _isDragging = false;
+    }
+
     // 0x0049DC97
-    static void onToolDown([[maybe_unused]] Window& self, const WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id, const int16_t x, const int16_t y)
+    static void onToolUp(Window& self, const WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id, const int16_t x, const int16_t y)
     {
         if (widgetIndex != widx::construct)
         {
             return;
         }
 
-        if (_cState->trackType & (1 << 7))
+        if (_isDragging)
         {
-            onToolDownT(x, y, getRoadPieceId, tryMakeRoadJunctionAtLoc, TrackData::getRoadPiece);
+            onToolUpMultiple(self, widgetIndex);
+        }
+        else if (_cState->trackType & (1 << 7))
+        {
+            onToolUpSingle(x, y, getRoadPieceId, tryMakeRoadJunctionAtLoc, TrackData::getRoadPiece);
         }
         else
         {
-            onToolDownT(x, y, getTrackPieceId, tryMakeTrackJunctionAtLoc, TrackData::getTrackPiece);
+            onToolUpSingle(x, y, getTrackPieceId, tryMakeTrackJunctionAtLoc, TrackData::getTrackPiece);
         }
+    }
+
+    static void onToolAbort([[maybe_unused]] Window& self, const WidgetIndex_t widgetIndex, [[maybe_unused]] const WidgetId id)
+    {
+        if (widgetIndex != widx::construct)
+        {
+            return;
+        }
+
+        _isDragging = false;
     }
 
     // 0x0049D4F5
@@ -2898,8 +3011,7 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
         auto tr = Gfx::TextRenderer(drawingCtx);
 
         auto x = self->widgets[widx::construct].midX();
-        x += self->x;
-        auto y = self->widgets[widx::construct].bottom + self->y - 23;
+        auto y = self->widgets[widx::construct].bottom - 23;
 
         if (_cState->constructionHover != 1)
         {
@@ -2983,7 +3095,7 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
     static void draw(Window& self, Gfx::DrawingContext& drawingCtx)
     {
         self.draw(drawingCtx);
-        Common::drawTabs(&self, drawingCtx);
+        Common::drawTabs(self, drawingCtx);
 
         if (!self.widgets[widx::bridge].hidden)
         {
@@ -2994,8 +3106,8 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
                 {
                     auto company = CompanyManager::getPlayerCompany();
                     auto imageId = Gfx::recolour(bridgeObj->image, company->mainColours.primary);
-                    auto x = self.x + self.widgets[widx::bridge].left + 2;
-                    auto y = self.y + self.widgets[widx::bridge].top + 1;
+                    auto x = self.widgets[widx::bridge].left + 2;
+                    auto y = self.widgets[widx::bridge].top + 1;
 
                     drawingCtx.drawImage(x, y, imageId);
                 }
@@ -3023,8 +3135,8 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
             _cState->lastSelectedTrackPieceId = road->id;
             _cState->word_1135FD6 = (_cState->lastSelectedBridge << 8) & 0x1F;
 
-            auto x = self.x + self.widgets[widx::construct].left + 1;
-            auto y = self.y + self.widgets[widx::construct].top + 1;
+            auto x = self.widgets[widx::construct].left + 1;
+            auto y = self.widgets[widx::construct].top + 1;
             auto width = self.widgets[widx::construct].width();
             auto height = self.widgets[widx::construct].height();
 
@@ -3076,8 +3188,8 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
             _cState->lastSelectedTrackPieceId = track->id;
             _cState->word_1135FD6 = (_cState->lastSelectedBridge << 8) & 0x1F;
 
-            auto x = self.x + self.widgets[widx::construct].left + 1;
-            auto y = self.y + self.widgets[widx::construct].top + 1;
+            auto x = self.widgets[widx::construct].left + 1;
+            auto y = self.widgets[widx::construct].top + 1;
             auto width = self.widgets[widx::construct].width();
             auto height = self.widgets[widx::construct].height();
 
@@ -3115,13 +3227,13 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
         }
     }
 
-    void tabReset(Window* self)
+    void tabReset(Window& self)
     {
         if (_cState->constructionHover != 0)
         {
             _cState->constructionHover = 0;
             _cState->byte_113607E = 1;
-            self->callOnMouseUp(widx::rotate_90, self->widgets[widx::rotate_90].id);
+            self.callOnMouseUp(widx::rotate_90, self.widgets[widx::rotate_90].id);
         }
     }
 
@@ -3134,6 +3246,9 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
         .onUpdate = onUpdate,
         .onToolUpdate = onToolUpdate,
         .onToolDown = onToolDown,
+        .toolDrag = onToolDrag,
+        .toolUp = onToolUp,
+        .onToolAbort = onToolAbort,
         .tooltip = tooltip,
         .cursor = cursor,
         .prepareDraw = prepareDraw,
@@ -3145,73 +3260,73 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
         return kEvents;
     }
 
-    void previousTrackPiece(Window* self)
+    void previousTrackPiece(Window& self)
     {
-        WidgetIndex_t prev = self->prevAvailableWidgetInRange(widx::left_hand_curve_very_small, widx::s_bend_dual_track_right);
+        WidgetIndex_t prev = self.prevAvailableWidgetInRange(widx::left_hand_curve_very_small, widx::s_bend_dual_track_right);
         if (prev != -1)
         {
-            self->callOnMouseDown(prev, self->widgets[prev].id);
+            self.callOnMouseDown(prev, self.widgets[prev].id);
         }
     }
 
-    void nextTrackPiece(Window* self)
+    void nextTrackPiece(Window& self)
     {
-        WidgetIndex_t next = self->nextAvailableWidgetInRange(widx::left_hand_curve_very_small, widx::s_bend_dual_track_right);
+        WidgetIndex_t next = self.nextAvailableWidgetInRange(widx::left_hand_curve_very_small, widx::s_bend_dual_track_right);
         if (next != -1)
         {
-            self->callOnMouseDown(next, self->widgets[next].id);
+            self.callOnMouseDown(next, self.widgets[next].id);
         }
     }
 
-    void previousSlope(Window* self)
+    void previousSlope(Window& self)
     {
-        WidgetIndex_t prev = self->prevAvailableWidgetInRange(widx::steep_slope_down, widx::steep_slope_up);
+        WidgetIndex_t prev = self.prevAvailableWidgetInRange(widx::steep_slope_down, widx::steep_slope_up);
         if (prev != -1)
         {
-            self->callOnMouseDown(prev, self->widgets[prev].id);
+            self.callOnMouseDown(prev, self.widgets[prev].id);
         }
     }
 
-    void nextSlope(Window* self)
+    void nextSlope(Window& self)
     {
-        WidgetIndex_t next = self->nextAvailableWidgetInRange(widx::steep_slope_down, widx::steep_slope_up);
+        WidgetIndex_t next = self.nextAvailableWidgetInRange(widx::steep_slope_down, widx::steep_slope_up);
         if (next != -1)
         {
-            self->callOnMouseDown(next, self->widgets[next].id);
+            self.callOnMouseDown(next, self.widgets[next].id);
         }
     }
 
-    void buildAtCurrentPos(Window* self)
+    void buildAtCurrentPos(Window& self)
     {
-        if (self->currentTab != Common::widx::tab_construction - Common::widx::tab_construction)
+        if (self.currentTab != Common::widx::tab_construction - Common::widx::tab_construction)
         {
             return;
         }
 
         if (_cState->constructionHover == 0)
         {
-            self->callOnMouseUp(widx::construct, self->widgets[widx::construct].id);
+            self.callOnMouseUp(widx::construct, self.widgets[widx::construct].id);
         }
     }
 
-    void removeAtCurrentPos(Window* self)
+    void removeAtCurrentPos(Window& self)
     {
-        if (self->currentTab == Common::widx::tab_construction - Common::widx::tab_construction)
+        if (self.currentTab == Common::widx::tab_construction - Common::widx::tab_construction)
         {
-            self->callOnMouseUp(widx::remove, self->widgets[widx::remove].id);
+            self.callOnMouseUp(widx::remove, self.widgets[widx::remove].id);
         }
     }
 
-    void selectPosition(Window* self)
+    void selectPosition(Window& self)
     {
-        if (self->currentTab != Common::widx::tab_construction - Common::widx::tab_construction)
+        if (self.currentTab != Common::widx::tab_construction - Common::widx::tab_construction)
         {
             return;
         }
 
         if (_cState->constructionHover == 0)
         {
-            self->callOnMouseUp(widx::rotate_90, self->widgets[widx::rotate_90].id);
+            self.callOnMouseUp(widx::rotate_90, self.widgets[widx::rotate_90].id);
         }
     }
 }

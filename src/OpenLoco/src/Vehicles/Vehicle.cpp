@@ -1,4 +1,6 @@
 #include "Vehicle.h"
+#include "Effects/ExplosionEffect.h"
+#include "Effects/VehicleCrashEffect.h"
 #include "Entities/EntityManager.h"
 #include "GameState.h"
 #include "Map/RoadElement.h"
@@ -6,6 +8,7 @@
 #include "Map/Track/SubpositionData.h"
 #include "Map/Track/Track.h"
 #include "Map/Track/TrackData.h"
+#include "MessageManager.h"
 #include "Objects/AirportObject.h"
 #include "Objects/ObjectManager.h"
 #include "RoutingManager.h"
@@ -19,14 +22,14 @@ using namespace OpenLoco::Interop;
 namespace OpenLoco::Vehicles
 {
     static loco_global<uint8_t[128], 0x004F7358> _4F7358; // trackAndDirection without the direction 0x1FC
-    static loco_global<uint32_t, 0x01136114> _vehicleUpdate_var_1136114;
+    static loco_global<UpdateVar1136114Flags, 0x01136114> _vehicleUpdate_var_1136114;
     static loco_global<EntityId, 0x0113610E> _vehicleUpdate_collisionCarComponent;
 
 #pragma pack(push, 1)
     // There are some common elements in the vehicle components at various offsets these can be accessed via VehicleBase
     struct VehicleCommon : VehicleBase
     {
-        uint8_t pad_24[0x24 - 0x22];
+        ColourScheme colourScheme;           // 0x24
         EntityId head;                       // 0x26
         int32_t remainingDistance;           // 0x28
         TrackAndDirection trackAndDirection; // 0x2C
@@ -44,6 +47,18 @@ namespace OpenLoco::Vehicles
     };
     static_assert(sizeof(VehicleCommon) == 0x43); // Can't use offset_of change this to last field if more found
 #pragma pack(pop)
+
+    ColourScheme VehicleBase::getColourScheme()
+    {
+        auto* veh = reinterpret_cast<VehicleCommon*>(this);
+        return veh->colourScheme;
+    }
+
+    void VehicleBase::setColourScheme(ColourScheme colourScheme)
+    {
+        auto* veh = reinterpret_cast<VehicleCommon*>(this);
+        veh->colourScheme = colourScheme;
+    }
 
     VehicleBase* VehicleBase::nextVehicle()
     {
@@ -138,12 +153,103 @@ namespace OpenLoco::Vehicles
         return (ent->vehicleFlags & flagsToTest) != VehicleFlags::none;
     }
 
-    // 0x004AA464
-    void VehicleBase::sub_4AA464()
+    // 0x004AA407
+    void VehicleBase::explodeComponent()
     {
-        registers regs;
-        regs.esi = X86Pointer(this);
-        call(0x004AA464, regs);
+        auto subType = getSubType();
+        assert(subType == VehicleEntityType::bogie || subType == VehicleEntityType::body_start || subType == VehicleEntityType::body_continued);
+
+        const auto pos = position + World::Pos3{ 0, 0, 22 };
+        Audio::playSound(Audio::SoundId::crash, pos);
+
+        ExplosionCloud::create(pos);
+
+        const auto numParticles = std::min(spriteWidth / 4, 7);
+        for (auto i = 0; i < numParticles; ++i)
+        {
+            ColourScheme colourScheme = (subType == VehicleEntityType::bogie) ? reinterpret_cast<VehicleBogie*>(this)->colourScheme : reinterpret_cast<VehicleBody*>(this)->colourScheme;
+            VehicleCrashParticle::create(pos, colourScheme);
+        }
+    }
+
+    // 0x004AA464
+    void VehicleBase::destroyTrain()
+    {
+        Vehicle train(this->getHead());
+
+        if (train.head->status != Status::crashed && train.head->status != Status::stuck)
+        {
+            train.head->status = Status::crashed;
+            train.head->crashedTimeout = 0;
+
+            if (train.head->owner == getGameState().playerCompanies[0])
+            {
+                MessageManager::post(
+                    MessageType::vehicleCrashed,
+                    train.head->owner,
+                    (uint16_t)train.head->id,
+                    0xFFFF,
+                    0xFFFF);
+            }
+        }
+
+        train.cars.applyToComponents([](auto& carComponent) { carComponent.refundCost = 0; });
+
+        train.head->totalRefundCost = 0;
+
+        Speed32 currentSpeed = train.veh2->currentSpeed;
+        train.veh2->motorState = MotorState::stopped;
+
+        train.cars.applyToComponents([&](auto& carComponent) {
+            if (carComponent.isVehicleBogie())
+            {
+                carComponent.asVehicleBogie()->var_5A = currentSpeed.getRaw();
+            }
+        });
+
+        if (this->getSubType() == VehicleEntityType::vehicle_2)
+        {
+            auto* bogie = train.cars.firstCar.front;
+
+            if (!train.cars.empty())
+            {
+                bogie->var_5A |= (1U << 31);
+                bogie->tileX = 0;
+                bogie->tileY = 0;
+                bogie->tileBaseZ = 0;
+            }
+        }
+        else if (this->getSubType() == VehicleEntityType::bogie)
+        {
+            VehicleBogie* bogie = this->asVehicleBogie();
+
+            bogie->var_5A |= (1U << 31);
+            bogie->tileX = 0;
+            bogie->tileY = 0;
+            bogie->tileBaseZ = 0;
+        }
+        else
+        {
+            VehicleBogie* explodeBogie = nullptr;
+            for (auto& car : train.cars)
+            {
+                for (auto& carComponent : car)
+                {
+                    explodeBogie = carComponent.back;
+                    if (carComponent.body == this)
+                    {
+                        break;
+                    }
+                }
+            }
+            if (explodeBogie != nullptr)
+            {
+                explodeBogie->var_5A |= (1U << 31);
+                explodeBogie->tileX = 0;
+                explodeBogie->tileY = 0;
+                explodeBogie->tileBaseZ = 0;
+            }
+        }
     }
 
     static bool updateRoadMotionNewRoadPiece(VehicleCommon& component)
@@ -155,11 +261,11 @@ namespace OpenLoco::Vehicles
         if (routing != RoutingManager::kAllocatedButFreeRoutingStation)
         {
             Vehicle train(component.head);
-            if (_vehicleUpdate_var_1136114 & (1U << 15))
+            if (hasUpdateVar1136114Flags(UpdateVar1136114Flags::unk_m15))
             {
                 if (train.veh1->routingHandle == component.routingHandle)
                 {
-                    _vehicleUpdate_var_1136114 |= (1U << 3);
+                    setUpdateVar1136114Flags(UpdateVar1136114Flags::unk_m03);
                     return false;
                 }
             }
@@ -179,7 +285,7 @@ namespace OpenLoco::Vehicles
             }
             if (!routingFound)
             {
-                _vehicleUpdate_var_1136114 |= (1U << 1);
+                setUpdateVar1136114Flags(UpdateVar1136114Flags::noRouteFound);
                 return false;
             }
             component.routingHandle = newRoutingHandle;
@@ -209,11 +315,11 @@ namespace OpenLoco::Vehicles
         if (routing != RoutingManager::kAllocatedButFreeRoutingStation)
         {
             Vehicle train(component.head);
-            if (_vehicleUpdate_var_1136114 & (1U << 15))
+            if (hasUpdateVar1136114Flags(UpdateVar1136114Flags::unk_m15))
             {
                 if (train.veh1->routingHandle == component.routingHandle)
                 {
-                    _vehicleUpdate_var_1136114 |= (1U << 3);
+                    setUpdateVar1136114Flags(UpdateVar1136114Flags::unk_m03);
                     return false;
                 }
             }
@@ -223,7 +329,7 @@ namespace OpenLoco::Vehicles
             const auto tc = World::Track::getTrackConnections(nextPos, nextRot, component.owner, component.trackType, train.head->var_53, 0);
             if (tc.hasLevelCrossing)
             {
-                _vehicleUpdate_var_1136114 |= (1U << 4);
+                setUpdateVar1136114Flags(UpdateVar1136114Flags::approachingGradeCrossing);
             }
             bool routingFound = false;
             for (auto& connection : tc.connections)
@@ -236,7 +342,7 @@ namespace OpenLoco::Vehicles
             }
             if (!routingFound)
             {
-                _vehicleUpdate_var_1136114 |= (1U << 1);
+                setUpdateVar1136114Flags(UpdateVar1136114Flags::noRouteFound);
                 return false;
             }
             component.routingHandle = newRoutingHandle;
@@ -404,7 +510,7 @@ namespace OpenLoco::Vehicles
                 {
                     returnValue = component.remainingDistance - 0x3689;
                     component.remainingDistance = 0x3689;
-                    _vehicleUpdate_var_1136114 |= (1U << 0);
+                    setUpdateVar1136114Flags(UpdateVar1136114Flags::unk_m00);
                     break;
                 }
                 else
@@ -426,7 +532,7 @@ namespace OpenLoco::Vehicles
                 auto collideResult = checkForCollisions(*component.asVehicleBogie(), intermediatePosition);
                 if (collideResult != EntityId::null)
                 {
-                    _vehicleUpdate_var_1136114 |= (1U << 2);
+                    setUpdateVar1136114Flags(UpdateVar1136114Flags::crashed);
                     _vehicleUpdate_collisionCarComponent = collideResult;
                 }
             }
@@ -464,7 +570,7 @@ namespace OpenLoco::Vehicles
                     {
                         returnValue = component.remainingDistance - 0x3689;
                         component.remainingDistance = 0x3689;
-                        _vehicleUpdate_var_1136114 |= (1U << 0);
+                        setUpdateVar1136114Flags(UpdateVar1136114Flags::unk_m00);
                         break;
                     }
                     else
@@ -486,7 +592,7 @@ namespace OpenLoco::Vehicles
                     auto collideResult = checkForCollisions(*component.asVehicleBogie(), intermediatePosition);
                     if (collideResult != EntityId::null)
                     {
-                        _vehicleUpdate_var_1136114 |= (1U << 2);
+                        setUpdateVar1136114Flags(UpdateVar1136114Flags::crashed);
                         _vehicleUpdate_collisionCarComponent = collideResult;
                     }
                 }
@@ -714,7 +820,7 @@ namespace OpenLoco::Vehicles
         {
             throw Exception::RuntimeError("Invalid Vehicle head");
         }
-        head->sub_4B7CC3();
+        head->updateTrainProperties();
 
         Ui::WindowManager::invalidate(Ui::WindowType::vehicle, enumValue(head->id));
 
@@ -779,7 +885,7 @@ namespace OpenLoco::Vehicles
         newFirstComponent.front->secondaryCargo = oldFirstComponent.front->secondaryCargo;
         newFirstComponent.front->breakdownFlags = oldFirstComponent.front->breakdownFlags;
         newFirstComponent.front->breakdownTimeout = oldFirstComponent.front->breakdownTimeout;
-        newFirstComponent.front->var_52 = oldFirstComponent.front->var_52;
+        newFirstComponent.front->totalCarWeight = oldFirstComponent.front->totalCarWeight;
         newFirstComponent.front->reliability = oldFirstComponent.front->reliability;
         newFirstComponent.front->timeoutToBreakdown = oldFirstComponent.front->timeoutToBreakdown;
 
@@ -841,6 +947,101 @@ namespace OpenLoco::Vehicles
         precedingDestComponent->setNextCar(source.id);
     }
 
+    // 0x004AF5E1
+    // esi: head
+    // returns nothing
+    void connectJacobsBogies(VehicleHead& head)
+    {
+        /*
+        Jacobs Bogie connections are completely invisible until a jacob's bogie connection is made. The visible body of the car is another
+        CarComponent that is either the first CarComponent (if a connection is available only at the back of the Car), the middle CarComponent
+        (if there are two connections available), or the last CarComponent (if a connection is available only at the front of the Car).
+        The comments in the code assume that two connections are available, and refer to each CarComponent as the First, Last, and Body CarComponent.
+
+        The bodies of these invisible CarComponents are used to store the flag that the jacob's bogie connection is available. If the first
+        CarComponent of a Car sees that the previous CarComponent has the flag, and it has the flag as well, a connection will be made.
+
+        If the last CarComponent of a Car is flagged for a connection, it will reset to default without checking if the next component should
+        connect, and the connection will be re-made by the next Car, if necessary. This is eaiser than verifying that the connection is made
+        correctly.
+        */
+        Vehicle train(head);
+        auto componentsFound = 0;
+        CarComponent previousCarComponent;
+        CarComponent secondPreviousCarComponent;
+        for (auto& car : train.cars)
+        {
+            if (car.body->has38Flags(Flags38::jacobsBogieAvailable))
+            {
+                auto frontBogieOfNext = car.body->nextVehicleComponent();
+                if (frontBogieOfNext == nullptr)
+                {
+                    throw Exception::RuntimeError("connectJacobsBogies frontBogieOfNext was unexpectedly nullptr");
+                }
+                // Body's component
+                CarComponent nextComponent = CarComponent(frontBogieOfNext);
+
+                // Create First's jacob's bogie connection
+                // Change from vanilla: this case occurred after the code in the else-block and the else-block was not conditional.
+                if (componentsFound >= 1 && previousCarComponent.body->has38Flags(Flags38::jacobsBogieAvailable))
+                {
+                    if (componentsFound < 2)
+                    {
+                        throw Exception::RuntimeError("connectJacobsBogies tried to connect jacob's bogie without secondPreviousCarComponent");
+                    }
+
+                    auto frontObject = ObjectManager::get<VehicleObject>(car.front->objectId);
+                    car.front->objectSpriteType = frontObject->carComponents[car.front->bodyIndex].frontBogieSpriteInd;
+                    // set my body's front bogie to invisible
+                    nextComponent.front->objectSpriteType = 0xFF;
+                    // set previous car's body's rear bogie to invisible
+                    secondPreviousCarComponent.back->objectSpriteType = 0xFF;
+                }
+                // Reset First's jacob's bogie connection
+                else
+                {
+                    car.front->objectSpriteType = 0xFF;
+                    car.back->objectSpriteType = 0xFF;
+                    car.body->objectSpriteType = 0xFF;
+
+                    auto bodyObject = ObjectManager::get<VehicleObject>(nextComponent.body->objectId);
+                    nextComponent.front->objectSpriteType = bodyObject->carComponents[nextComponent.body->bodyIndex].frontBogieSpriteInd;
+                    if (nextComponent.body->has38Flags(Flags38::isReversed))
+                    {
+                        // Change from vanilla: set bogie orientation based on body's object
+                        nextComponent.front->objectSpriteType = bodyObject->carComponents[nextComponent.body->bodyIndex].backBogieSpriteInd;
+                    }
+                }
+            }
+            for (auto& component : car)
+            {
+                // Reset Last jacob's bogie connection
+                // Jacobs bogie flag is only set on the first and last CarComponent of the car, it cannot be set on middle one(s)
+                if (component.body->has38Flags(Flags38::jacobsBogieAvailable) && component.body->getSubType() == VehicleEntityType::body_continued)
+                {
+                    if (componentsFound == 0)
+                    {
+                        throw Exception::RuntimeError("connectJacobsBogies reached end of Car without previousCarComponent");
+                    }
+                    component.front->objectSpriteType = 0xFF;
+                    component.back->objectSpriteType = 0xFF;
+                    component.body->objectSpriteType = 0xFF;
+                    // Change from vanilla: gets bogie's object instead of body's object
+                    auto carLastBogieObject = ObjectManager::get<VehicleObject>(previousCarComponent.back->objectId);
+                    previousCarComponent.back->objectSpriteType = carLastBogieObject->carComponents[previousCarComponent.back->bodyIndex].backBogieSpriteInd;
+                    if (previousCarComponent.body->has38Flags(Flags38::isReversed))
+                    {
+                        // Change from vanilla: sets bogie orientation based on body's object
+                        previousCarComponent.back->objectSpriteType = carLastBogieObject->carComponents[previousCarComponent.back->bodyIndex].frontBogieSpriteInd;
+                    }
+                }
+                secondPreviousCarComponent = previousCarComponent;
+                previousCarComponent = component;
+                componentsFound++;
+            }
+        }
+    }
+
     void registerHooks()
     {
         registerHook(
@@ -882,5 +1083,80 @@ namespace OpenLoco::Vehicles
                 regs = backup;
                 return 0;
             });
+
+        registerHook(
+            0x00478CE9,
+            [](registers& regs) FORCE_ALIGN_ARG_POINTER -> uint8_t {
+                registers backup = regs;
+
+                const auto pos = World::Pos3(regs.ax, regs.cx, regs.dx);
+                const uint16_t tad = regs.bp;
+                const auto companyId = CompanyId(regs.bl);
+                const uint8_t roadObjId = regs.bh;
+                const auto requiredMods = addr<0x0113601A, uint8_t>();
+                const auto queryMods = addr<0x0113601B, uint8_t>();
+                auto& legacyConnections = *X86Pointer<World::Track::LegacyTrackConnections>(regs.edi - 4);
+                legacyConnections.size = 0;
+                const auto [nextPos, nextRot] = World::Track::getRoadConnectionEnd(pos, tad);
+                const auto connections = World::Track::getRoadConnectionsOneWay(nextPos, nextRot, companyId, roadObjId, requiredMods, queryMods);
+                World::Track::toLegacyConnections(connections, legacyConnections);
+                regs = backup;
+                regs.ax = nextPos.x;
+                regs.cx = nextPos.y;
+                regs.dx = nextPos.z;
+                return 0;
+            });
+
+        registerHook(
+            0x00478AC9,
+            [](registers& regs) FORCE_ALIGN_ARG_POINTER -> uint8_t {
+                registers backup = regs;
+
+                const auto pos = World::Pos3(regs.ax, regs.cx, regs.dx);
+                const uint16_t tad = regs.bp;
+                const auto companyId = CompanyId(regs.bl);
+                const uint8_t roadObjId = regs.bh;
+                const auto requiredMods = addr<0x0113601A, uint8_t>();
+                const auto queryMods = addr<0x0113601B, uint8_t>();
+                auto& legacyConnections = *X86Pointer<World::Track::LegacyTrackConnections>(regs.edi - 4);
+                legacyConnections.size = 0;
+                const auto [nextPos, nextRot] = World::Track::getRoadConnectionEnd(pos, tad);
+                const auto connections = World::Track::getRoadConnectionsAiAllocated(nextPos, nextRot, companyId, roadObjId, requiredMods, queryMods);
+                World::Track::toLegacyConnections(connections, legacyConnections);
+                regs = backup;
+                regs.ax = nextPos.x;
+                regs.cx = nextPos.y;
+                regs.dx = nextPos.z;
+
+                regs = backup;
+                return 0;
+            });
+
+        registerHook(
+            0x004AF5E1,
+            [](registers& regs) FORCE_ALIGN_ARG_POINTER -> uint8_t {
+                registers backup = regs;
+                VehicleHead* head = X86Pointer<VehicleHead>(regs.esi);
+                connectJacobsBogies(*head);
+                regs = backup;
+                return 0;
+            });
+    }
+
+    bool hasUpdateVar1136114Flags(UpdateVar1136114Flags flags)
+    {
+        return (*_vehicleUpdate_var_1136114 & flags) != UpdateVar1136114Flags::none;
+    }
+    void resetUpdateVar1136114Flags()
+    {
+        _vehicleUpdate_var_1136114 = UpdateVar1136114Flags::none;
+    }
+    void setUpdateVar1136114Flags(UpdateVar1136114Flags flags)
+    {
+        _vehicleUpdate_var_1136114 |= flags;
+    }
+    void unsetUpdateVar1136114Flags(UpdateVar1136114Flags flags)
+    {
+        _vehicleUpdate_var_1136114 &= ~flags;
     }
 }

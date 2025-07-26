@@ -352,6 +352,9 @@ namespace OpenLoco::Input
 
         Ui::Window* window = WindowManager::findAt(x, y);
 
+        // TODO: I think window can never be null, there is always a main window,
+        //       validate this and work with references from here on.
+
         Ui::WidgetIndex_t widgetIndex = kWidgetIndexNull;
         if (window != nullptr)
         {
@@ -468,7 +471,7 @@ namespace OpenLoco::Input
                         if (tool != nullptr)
                         {
                             // TODO: Handle widget id properly for tools.
-                            tool->callToolDragContinue(ToolManager::getToolWidgetIndex(), WidgetId::none, x, y);
+                            tool->callToolDrag(ToolManager::getToolWidgetIndex(), WidgetId::none, x, y);
                         }
                     }
                 }
@@ -490,7 +493,7 @@ namespace OpenLoco::Input
                     if (tool != nullptr)
                     {
                         // TODO: Handle widget id properly for tools.
-                        tool->callToolDragEnd(ToolManager::getToolWidgetIndex(), WidgetId::none);
+                        tool->callToolUp(ToolManager::getToolWidgetIndex(), WidgetId::none, x, y);
                     }
                 }
                 else if (!hasFlag(Flags::leftMousePressed))
@@ -608,7 +611,11 @@ namespace OpenLoco::Input
                 {
                     _ticksSinceDragStart = 1000;
 
-                    if (!window->viewportIsFocusedOnEntity())
+                    if (window->viewportIsFocusedOnAnyEntity())
+                    {
+                        window->viewportUnfocusFromEntity();
+                    }
+                    else
                     {
                         auto invert = Config::get().invertRightMouseViewPan ? -1 : 1;
                         auto offsetX = dragOffset.x << (vp->zoom + 1);
@@ -616,10 +623,6 @@ namespace OpenLoco::Input
 
                         window->viewportConfigurations[0].savedViewX += offsetX * invert;
                         window->viewportConfigurations[0].savedViewY += offsetY * invert;
-                    }
-                    else
-                    {
-                        window->viewportUnfocusFromEntity();
                     }
                 }
 
@@ -645,7 +648,7 @@ namespace OpenLoco::Input
     }
 
     // 0x004C71F6
-    static void stateScrollLeft(const MouseButton button, const WidgetIndex_t widgetIndex, Ui::Window* const window, Ui::Widget* const widget, const int16_t x, const int16_t y)
+    static void stateScrollLeft(const MouseButton button, const WidgetIndex_t widgetIndex, Ui::Window* window, Ui::Widget* const widget, const int16_t x, const int16_t y)
     {
         switch (button)
         {
@@ -656,7 +659,7 @@ namespace OpenLoco::Input
                     ScrollView::clearPressedButtons(_pressedWindowType, _pressedWindowNumber, _pressedWidgetIndex);
                     return;
                 }
-                ScrollView::scrollLeftContinue(x, y, window, widget, widgetIndex);
+                ScrollView::scrollLeftContinue(x, y, *window, widget, widgetIndex);
 
                 break;
             }
@@ -695,10 +698,10 @@ namespace OpenLoco::Input
                 {
                     _ticksSinceDragStart = 1000;
 
-                    Ui::Widget* widget = &window->widgets[_dragWidgetIndex];
+                    Ui::Widget& widget = window->widgets[_dragWidgetIndex];
                     const auto invert = Config::get().invertRightMouseViewPan ? -1 : 1;
-                    Ui::ScrollView::horizontalDragFollow(window, widget, _dragWidgetIndex, _dragScrollIndex, x * invert);
-                    Ui::ScrollView::verticalDragFollow(window, widget, _dragWidgetIndex, _dragScrollIndex, y * invert);
+                    Ui::ScrollView::horizontalDragFollow(*window, &widget, _dragWidgetIndex, _dragScrollIndex, x * invert);
+                    Ui::ScrollView::verticalDragFollow(*window, &widget, _dragWidgetIndex, _dragScrollIndex, y * invert);
                 }
 
                 break;
@@ -1234,7 +1237,7 @@ namespace OpenLoco::Input
         {
             if (widget->type == Ui::WidgetType::scrollview)
             {
-                auto res = Ui::ScrollView::getPart(window, widget, x, y);
+                auto res = Ui::ScrollView::getPart(*window, widget, x, y);
 
                 if (res.area == Ui::ScrollPart::none)
                 {
@@ -1390,7 +1393,7 @@ namespace OpenLoco::Input
                 _pressedWindowNumber = window->number;
                 _tooltipCursor->x = x;
                 _tooltipCursor->y = y;
-                Ui::ScrollView::scrollLeftBegin(x, y, window, widget, widgetIndex);
+                Ui::ScrollView::scrollLeftBegin(x, y, *window, widget, widgetIndex);
                 break;
 
             default:
@@ -1448,7 +1451,7 @@ namespace OpenLoco::Input
         {
             if (WindowManager::getCurrentModalType() == window->type)
             {
-                ScrollView::scrollModalRight(x, y, window, widget, widgetIndex);
+                ScrollView::scrollModalRight(x, y, *window, widget, widgetIndex);
             }
 
             return;
@@ -1641,7 +1644,7 @@ namespace OpenLoco::Input
                         _scrollLast->y = y;
 
                         auto res = Ui::ScrollView::getPart(
-                            window,
+                            *window,
                             &window->widgets[widgetIdx],
                             x,
                             y);

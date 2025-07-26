@@ -12,27 +12,24 @@ namespace OpenLoco::Ui::Widgets
     // 0x004CA6AE
     static void drawBoxed(Gfx::DrawingContext& drawingCtx, const Widget& widget, const WidgetState& widgetState)
     {
-        auto* window = widgetState.window;
-
         auto tr = Gfx::TextRenderer(drawingCtx);
 
-        const auto pos = window->position() + widget.position();
         const auto size = widget.size();
 
         drawingCtx.fillRectInset(
-            pos,
+            {},
             size,
             widgetState.colour,
             widgetState.flags | Gfx::RectInsetFlags::borderInset | Gfx::RectInsetFlags::fillDarker);
 
         drawingCtx.fillRect(
-            pos + Ui::Point(1, 1),
+            Ui::Point(1, 1),
             size - Ui::Size(2, 2),
             enumValue(ExtColour::unk2E),
             Gfx::RectFlags::transparent);
 
         int16_t width = size.width - 4 - 10;
-        auto centerPos = pos + Point(2 + (width / 2), 1);
+        auto centerPos = Point(2 + (width / 2), 1);
 
         auto formatArgs = FormatArguments(widget.textArgs);
         tr.drawStringCentredClipped(
@@ -75,14 +72,11 @@ namespace OpenLoco::Ui::Widgets
 
         StringManager::formatString(&stringBuffer[1], widget.text, formatArgs);
 
-        auto* window = widgetState.window;
-
-        const auto pos = window->position() + widget.position();
         const auto size = widget.size();
 
         int16_t width = size.width - 4 - 14;
 
-        auto stationNamePos = pos + Ui::Point(2 + (width / 2), 1);
+        auto stationNamePos = Ui::Point(2 + (width / 2), 1);
 
         auto tr = Gfx::TextRenderer(drawingCtx);
         tr.setCurrentFont(Gfx::Font::medium_bold);

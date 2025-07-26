@@ -8,8 +8,8 @@
 #include "Ui/Widgets/CaptionWidget.h"
 #include "Ui/Widgets/FrameWidget.h"
 #include "Ui/Widgets/ImageButtonWidget.h"
+#include "Ui/Widgets/PanelWidget.h"
 #include "Ui/Widgets/TabWidget.h"
-#include "Ui/Widgets/Wt3Widget.h"
 #include "Ui/WindowManager.h"
 #include <OpenLoco/Interop/Interop.hpp>
 #include <sfl/static_vector.hpp>
@@ -37,7 +37,6 @@ namespace OpenLoco::Ui::Windows::Construction
 
     constexpr uint16_t mapSelectedTilesSize = 300;
     static loco_global<Pos2[mapSelectedTilesSize], 0x00F24490> _mapSelectedTiles;
-    static loco_global<char[512], 0x0112CC04> _stringFormatBuffer;
 
 #pragma pack(push, 1)
     struct ConstructionState
@@ -155,7 +154,7 @@ namespace OpenLoco::Ui::Windows::Construction
                 Widgets::Frame({ 0, 0 }, { frameWidth, frameHeight }, WindowColour::primary),
                 Widgets::Caption({ 1, 1 }, { frameWidth - 2, 13 }, Widgets::Caption::Style::colourText, WindowColour::primary, windowCaptionId),
                 Widgets::ImageButton({ frameWidth - 15, 2 }, { 13, 13 }, WindowColour::primary, ImageIds::close_button, StringIds::tooltip_close_window),
-                Widgets::Wt3Widget({ 0, 41 }, { frameWidth, frameHeight - 41 }, WindowColour::secondary),
+                Widgets::Panel({ 0, 41 }, { frameWidth, frameHeight - 41 }, WindowColour::secondary),
                 Widgets::Tab({ 3, 15 }, { 31, 27 }, WindowColour::secondary, ImageIds::tab, StringIds::tab_track_road_construction),
                 Widgets::Tab({ 34, 15 }, { 31, 27 }, WindowColour::secondary, ImageIds::tab, StringIds::tab_station_construction),
                 Widgets::Tab({ 65, 15 }, { 31, 27 }, WindowColour::secondary, ImageIds::tab, StringIds::tab_signal_construction),
@@ -164,9 +163,9 @@ namespace OpenLoco::Ui::Windows::Construction
 
         void prepareDraw(Window* self);
         void resetWindow(Window& self, WidgetIndex_t tabWidgetIndex);
-        void switchTab(Window* self, WidgetIndex_t widgetIndex);
+        void switchTab(Window& self, WidgetIndex_t widgetIndex);
         void repositionTabs(Window* self);
-        void drawTabs(Window* self, Gfx::DrawingContext& drawingCtx);
+        void drawTabs(Window& self, Gfx::DrawingContext& drawingCtx);
         void onClose(Window& self);
         void onUpdate(Window* self, GhostVisibilityFlags flag);
         void sub_4CD454();
@@ -256,17 +255,17 @@ namespace OpenLoco::Ui::Windows::Construction
 
         void reset();
         void activateSelectedConstructionWidgets();
-        void tabReset(Window* self);
+        void tabReset(Window& self);
         void drawTrack(const World::Pos3& pos, uint16_t selectedMods, uint8_t trackType, uint8_t trackPieceId, uint8_t rotation, Gfx::DrawingContext& drawingCtx);
         void drawRoad(const World::Pos3& pos, uint16_t selectedMods, uint8_t trackType, uint8_t trackPieceId, uint8_t rotation, Gfx::DrawingContext& drawingCtx);
         void removeTrackGhosts();
-        void previousTrackPiece(Window* self);
-        void nextTrackPiece(Window* self);
-        void previousSlope(Window* self);
-        void nextSlope(Window* self);
-        void buildAtCurrentPos(Window* self);
-        void removeAtCurrentPos(Window* self);
-        void selectPosition(Window* self);
+        void previousTrackPiece(Window& self);
+        void nextTrackPiece(Window& self);
+        void previousSlope(Window& self);
+        void nextSlope(Window& self);
+        void buildAtCurrentPos(Window& self);
+        void removeAtCurrentPos(Window& self);
+        void selectPosition(Window& self);
         const WindowEventList& getEvents();
     }
 
@@ -282,7 +281,7 @@ namespace OpenLoco::Ui::Windows::Construction
 
         std::span<const Widget> getWidgets();
 
-        void tabReset(Window* self);
+        void tabReset(Window& self);
         void removeStationGhost();
         const WindowEventList& getEvents();
     }
@@ -299,7 +298,7 @@ namespace OpenLoco::Ui::Windows::Construction
 
         std::span<const Widget> getWidgets();
 
-        void tabReset(Window* self);
+        void tabReset(Window& self);
         void removeSignalGhost();
         const WindowEventList& getEvents();
     }
@@ -319,7 +318,7 @@ namespace OpenLoco::Ui::Windows::Construction
 
         std::span<const Widget> getWidgets();
 
-        void tabReset(Window* self);
+        void tabReset(Window& self);
         void removeTrackModsGhost();
         const WindowEventList& getEvents();
     }

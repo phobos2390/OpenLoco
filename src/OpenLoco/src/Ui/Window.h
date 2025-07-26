@@ -80,8 +80,8 @@ namespace OpenLoco::Ui
         void (*event_09)(Window&) = nullptr;
         void (*onToolUpdate)(Window&, const WidgetIndex_t, WidgetId, const int16_t, const int16_t) = nullptr;
         void (*onToolDown)(Window&, const WidgetIndex_t, WidgetId, const int16_t, const int16_t) = nullptr;
-        void (*toolDragContinue)(Window&, const WidgetIndex_t, WidgetId, const int16_t, const int16_t) = nullptr;
-        void (*toolDragEnd)(Window&, const WidgetIndex_t, WidgetId) = nullptr;
+        void (*toolDrag)(Window&, const WidgetIndex_t, WidgetId, const int16_t, const int16_t) = nullptr;
+        void (*toolUp)(Window&, const WidgetIndex_t, WidgetId, const int16_t, const int16_t) = nullptr;
         void (*onToolAbort)(Window&, const WidgetIndex_t, WidgetId) = nullptr;
         Ui::CursorId (*toolCursor)(Window&, const int16_t x, const int16_t y, const Ui::CursorId, bool&) = nullptr;
         void (*getScrollSize)(Window&, uint32_t scrollIndex, uint16_t* scrollWidth, uint16_t* scrollHeight) = nullptr;
@@ -110,71 +110,58 @@ namespace OpenLoco::Ui
 
     struct SavedView
     {
-        union
-        {
-            coord_t mapX;
-            EntityId entityId;
-        };
-        union
-        {
-            coord_t mapY;
-            uint16_t flags;
-        };
-        ZoomLevel zoomLevel;
-        int8_t rotation;
-        int16_t surfaceZ;
+        coord_t mapX{ -1 };
+        coord_t mapY{ -1 };
+        EntityId entityId{ EntityId::null };
+        uint16_t flags{};
+        ZoomLevel zoomLevel{};
+        int8_t rotation{};
+        int16_t surfaceZ{};
 
-        SavedView() = default;
+        constexpr SavedView() = default;
 
-        SavedView(coord_t mapX, coord_t mapY, ZoomLevel zoomLevel, int8_t rotation, coord_t surfaceZ)
+        constexpr SavedView(coord_t mapX, coord_t mapY, ZoomLevel zoomLevel, int8_t rotation, coord_t surfaceZ)
             : mapX(mapX)
             , mapY(mapY)
             , zoomLevel(zoomLevel)
             , rotation(rotation)
             , surfaceZ(surfaceZ) {};
 
-        SavedView(EntityId entityId, uint16_t flags, ZoomLevel zoomLevel, int8_t rotation, coord_t surfaceZ)
+        constexpr SavedView(EntityId entityId, uint16_t flags, ZoomLevel zoomLevel, int8_t rotation, coord_t surfaceZ)
             : entityId(entityId)
             , flags(flags)
             , zoomLevel(zoomLevel)
             , rotation(rotation)
             , surfaceZ(surfaceZ) {};
 
-        bool isEmpty() const
+        constexpr bool isEmpty() const
         {
-            return mapX == -1 && mapY == -1;
+            return mapX == -1 && mapY == -1 && entityId == EntityId::null;
         }
 
-        bool hasUnkFlag15() const
-        {
-            return (flags & (1 << 14)) != 0;
-        }
-
-        bool isEntityView() const
+        constexpr bool isEntityView() const
         {
             return (flags & (1 << 15)) != 0;
         }
 
-        World::Pos3 getPos() const
+        constexpr World::Pos3 getPos() const
         {
             if (isEntityView())
             {
                 return {};
             }
 
-            return { mapX, static_cast<coord_t>(mapY & 0x3FFF), surfaceZ };
+            return { mapX, mapY, surfaceZ };
         }
 
-        void clear()
+        constexpr void clear()
         {
             mapX = -1;
             mapY = -1;
+            entityId = EntityId::null;
         }
 
-        bool operator==(const SavedView& rhs) const
-        {
-            return mapX == rhs.mapX && mapY == rhs.mapY && zoomLevel == rhs.zoomLevel && rotation == rhs.rotation && surfaceZ == rhs.surfaceZ;
-        }
+        auto operator<=>(const SavedView& other) const = default;
     };
 
     struct Window
@@ -355,7 +342,8 @@ namespace OpenLoco::Ui
         void viewportCentreOnTile(const World::Pos3& loc);
         void viewportCentreTileAroundCursor(int16_t mapX, int16_t mapY, int16_t offsetX, int16_t offsetY);
         void viewportFocusOnEntity(EntityId targetEntity);
-        bool viewportIsFocusedOnEntity() const;
+        bool viewportIsFocusedOnEntity(EntityId targetEntity) const;
+        bool viewportIsFocusedOnAnyEntity() const;
         void viewportUnfocusFromEntity();
         void viewportZoomSet(int8_t zoomLevel, bool toCursor);
         void viewportZoomIn(bool toCursor);
@@ -384,8 +372,8 @@ namespace OpenLoco::Ui
         void call_9();                                                                                                    // 9
         void callToolUpdate(WidgetIndex_t widgetIndex, WidgetId id, int16_t xPos, int16_t yPos);                          // 10
         void callToolDown(WidgetIndex_t widgetIndex, WidgetId id, int16_t xPos, int16_t yPos);                            // 11
-        void callToolDragContinue(WidgetIndex_t widgetIndex, WidgetId id, const int16_t xPos, const int16_t yPos);        // 12
-        void callToolDragEnd(WidgetIndex_t widgetIndex, WidgetId id);                                                     // 13
+        void callToolDrag(WidgetIndex_t widgetIndex, WidgetId id, const int16_t xPos, const int16_t yPos);                // 12
+        void callToolUp(WidgetIndex_t widgetIndex, WidgetId id, const int16_t xPos, const int16_t yPos);                  // 13
         void callToolAbort(WidgetIndex_t widgetIndex, WidgetId id);                                                       // 14
         Ui::CursorId callToolCursor(int16_t xPos, int16_t yPos, Ui::CursorId fallback, bool* out);                        // 15
         void callGetScrollSize(uint32_t scrollIndex, uint16_t* scrollWidth, uint16_t* scrollHeight);                      // 16

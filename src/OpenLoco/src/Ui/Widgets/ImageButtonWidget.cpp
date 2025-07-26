@@ -11,10 +11,6 @@ namespace OpenLoco::Ui::Widgets
     // 0x004CADE8
     static void drawImage(Gfx::DrawingContext& drawingCtx, const Widget& widget, const WidgetState& widgetState)
     {
-        auto* window = widgetState.window;
-
-        const auto pos = window->position() + widget.position();
-
         const bool isColourSet = widget.image & Widget::kImageIdColourSet;
         ImageId imageId = ImageId::fromUInt32(widget.image & ~Widget::kImageIdColourSet);
 
@@ -33,16 +29,16 @@ namespace OpenLoco::Ui::Widgets
             if (colour.isTranslucent())
             {
                 c = Colours::getShade(colour.c(), 4);
-                drawingCtx.drawImageSolid(pos + Ui::Point{ 1, 1 }, pureImage, c);
+                drawingCtx.drawImageSolid(Ui::Point{ 1, 1 }, pureImage, c);
                 c = Colours::getShade(colour.c(), 2);
-                drawingCtx.drawImageSolid(pos, pureImage, c);
+                drawingCtx.drawImageSolid({}, pureImage, c);
             }
             else
             {
                 c = Colours::getShade(colour.c(), 6);
-                drawingCtx.drawImageSolid(pos + Ui::Point{ 1, 1 }, pureImage, c);
+                drawingCtx.drawImageSolid(Ui::Point{ 1, 1 }, pureImage, c);
                 c = Colours::getShade(colour.c(), 4);
-                drawingCtx.drawImageSolid(pos, pureImage, c);
+                drawingCtx.drawImageSolid({}, pureImage, c);
             }
 
             return;
@@ -63,14 +59,13 @@ namespace OpenLoco::Ui::Widgets
             imageId = ImageId::fromUInt32(Gfx::recolour(imageId.getIndex(), colour.c()));
         }
 
-        drawingCtx.drawImage(pos, imageId);
+        drawingCtx.drawImage({}, imageId);
     }
 
     static void draw_3(Gfx::DrawingContext& drawingCtx, const Widget& widget, const WidgetState& widgetState)
     {
         auto* window = widgetState.window;
 
-        const auto pos = window->position() + widget.position();
         const auto size = widget.size();
 
         auto flags = widgetState.flags;
@@ -82,17 +77,17 @@ namespace OpenLoco::Ui::Widgets
         if (widget.content == Widget::kContentUnk)
         {
             flags |= Gfx::RectInsetFlags::fillNone;
-            drawingCtx.fillRectInset(pos, size, widgetState.colour, flags);
+            drawingCtx.fillRectInset({}, size, widgetState.colour, flags);
             return;
         }
 
         if (window->hasFlags(WindowFlags::flag_6))
         {
-            drawingCtx.fillRect(pos, size, enumValue(ExtColour::unk34), Gfx::RectFlags::transparent);
+            drawingCtx.fillRect({}, size, enumValue(ExtColour::unk34), Gfx::RectFlags::transparent);
         }
 
         // TODO: Add a setting to decide if it should be translucent or not, for now it seems all ImageButton's require this.
-        drawingCtx.fillRectInset(pos, size, widgetState.colour.translucent(), flags);
+        drawingCtx.fillRectInset({}, size, widgetState.colour.translucent(), flags);
 
         if (widget.content == Widget::kContentNull)
         {
@@ -112,9 +107,6 @@ namespace OpenLoco::Ui::Widgets
             return;
         }
 
-        auto* window = widgetState.window;
-
-        const auto pos = window->position() + widget.position();
         const auto size = widget.size();
 
         if (widgetState.activated)
@@ -126,12 +118,12 @@ namespace OpenLoco::Ui::Widgets
                 // 0x004CABE8
 
                 flags |= Gfx::RectInsetFlags::fillNone;
-                drawingCtx.fillRectInset(pos, size, widgetState.colour, flags);
+                drawingCtx.fillRectInset({}, size, widgetState.colour, flags);
 
                 return;
             }
 
-            drawingCtx.fillRectInset(pos, size, widgetState.colour, flags);
+            drawingCtx.fillRectInset({}, size, widgetState.colour, flags);
         }
 
         if (widget.content == Widget::kContentNull)
