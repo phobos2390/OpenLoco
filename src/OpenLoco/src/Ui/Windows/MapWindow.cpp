@@ -60,9 +60,9 @@ namespace OpenLoco::Ui::Windows::MapWindow
 
     // 0x004FDC4C
     static std::array<Point, 4> kViewFrameOffsetsByRotation = { {
-        { kMapColumns - 2, 0 },
-        { kRenderedMapWidth - 6, kMapRows },
-        { kMapColumns - 2, kRenderedMapHeight },
+        { kMapColumns - 8, 0 },
+        { kRenderedMapWidth - 8, kMapRows },
+        { kMapColumns - 8, kRenderedMapHeight },
         { -8, kMapRows },
     } };
 
@@ -103,7 +103,7 @@ namespace OpenLoco::Ui::Windows::MapWindow
         statusBar,
     };
 
-    static constexpr auto widgets = makeWidgets(
+    static constexpr auto kWidgets = makeWidgets(
         Widgets::Frame({ 0, 0 }, { 350, 272 }, WindowColour::primary),
         Widgets::Caption({ 1, 1 }, { 348, 13 }, Widgets::Caption::Style::whiteText, WindowColour::primary, StringIds::title_map),
         Widgets::ImageButton({ 335, 2 }, { 13, 13 }, WindowColour::primary, ImageIds::close_button, StringIds::tooltip_close_window),
@@ -1118,9 +1118,8 @@ namespace OpenLoco::Ui::Windows::MapWindow
     }
 
     // 0x0046B9E7
-    static void getScrollSize(Window& self, [[maybe_unused]] uint32_t scrollIndex, uint16_t* scrollWidth, uint16_t* scrollHeight)
+    static void getScrollSize([[maybe_unused]] Window& self, [[maybe_unused]] uint32_t scrollIndex, uint16_t* scrollWidth, uint16_t* scrollHeight)
     {
-        self.callPrepareDraw();
         *scrollWidth = kRenderedMapWidth;
         *scrollHeight = kRenderedMapHeight;
     }
@@ -1203,7 +1202,7 @@ namespace OpenLoco::Ui::Windows::MapWindow
     }
 
     // 0x0046D0E0
-    static void drawTabs(Window* self, Gfx::DrawingContext& drawingCtx)
+    static void drawTabs(Window& self, Gfx::DrawingContext& drawingCtx)
     {
         auto skin = ObjectManager::get<InterfaceSkinObject>();
 
@@ -1223,7 +1222,7 @@ namespace OpenLoco::Ui::Windows::MapWindow
 
         // tabVehicles,
         {
-            if (!(self->disabledWidgets & (1 << widx::tabVehicles)))
+            if (!(self.disabledWidgets & (1 << widx::tabVehicles)))
             {
                 static constexpr uint32_t vehicleImageIds[] = {
                     InterfaceSkin::ImageIds::vehicle_train_frame_0,
@@ -1237,9 +1236,9 @@ namespace OpenLoco::Ui::Windows::MapWindow
                 };
 
                 uint32_t imageId = skin->img;
-                if (self->currentTab == widx::tabVehicles - widx::tabOverall)
+                if (self.currentTab == widx::tabVehicles - widx::tabOverall)
                 {
-                    imageId += vehicleImageIds[(self->frameNo / 2) % std::size(vehicleImageIds)];
+                    imageId += vehicleImageIds[(self.frameNo / 2) % std::size(vehicleImageIds)];
                 }
                 else
                 {
@@ -1270,7 +1269,7 @@ namespace OpenLoco::Ui::Windows::MapWindow
 
         // tabRoutes,
         {
-            if (!(self->disabledWidgets & (1 << widx::tabRoutes)))
+            if (!(self.disabledWidgets & (1 << widx::tabRoutes)))
             {
                 static constexpr uint32_t routeImageIds[] = {
                     InterfaceSkin::ImageIds::tab_routes_frame_0,
@@ -1280,9 +1279,9 @@ namespace OpenLoco::Ui::Windows::MapWindow
                 };
 
                 uint32_t imageId = skin->img;
-                if (self->currentTab == widx::tabRoutes - widx::tabOverall)
+                if (self.currentTab == widx::tabRoutes - widx::tabOverall)
                 {
-                    imageId += routeImageIds[(self->frameNo / 16) % std::size(routeImageIds)];
+                    imageId += routeImageIds[(self.frameNo / 16) % std::size(routeImageIds)];
                 }
                 else
                 {
@@ -1295,7 +1294,7 @@ namespace OpenLoco::Ui::Windows::MapWindow
 
         // tabOwnership,
         {
-            if (!(self->disabledWidgets & (1 << widx::tabOwnership)))
+            if (!(self.disabledWidgets & (1 << widx::tabOwnership)))
             {
                 uint32_t imageId = skin->img;
                 imageId += InterfaceSkin::ImageIds::tab_companies;
@@ -1662,11 +1661,11 @@ namespace OpenLoco::Ui::Windows::MapWindow
         auto tr = Gfx::TextRenderer(drawingCtx);
 
         self.draw(drawingCtx);
-        drawTabs(&self, drawingCtx);
+        drawTabs(self, drawingCtx);
 
         {
-            auto x = self.x + self.width - 104;
-            uint16_t y = self.y + 44;
+            auto x = self.width - 104;
+            uint16_t y = 44;
 
             switch (self.currentTab + widx::tabOverall)
             {
@@ -1691,7 +1690,6 @@ namespace OpenLoco::Ui::Windows::MapWindow
                     break;
             }
 
-            y -= self.y;
             y += 14;
             y = std::max(y, static_cast<uint16_t>(92));
 
@@ -1718,7 +1716,7 @@ namespace OpenLoco::Ui::Windows::MapWindow
         }
 
         auto& widget = self.widgets[widx::statusBar];
-        auto point = Point(self.x + widget.left - 1, self.y + widget.top - 1);
+        auto point = Point(widget.left - 1, widget.top - 1);
         auto width = widget.width();
 
         tr.drawStringLeftClipped(point, width, Colour::black, StringIds::black_stringid, args);
@@ -2393,7 +2391,6 @@ namespace OpenLoco::Ui::Windows::MapWindow
     void open()
     {
         auto window = WindowManager::bringToFront(WindowType::map, 0);
-
         if (window != nullptr)
         {
             return;
@@ -2418,7 +2415,7 @@ namespace OpenLoco::Ui::Windows::MapWindow
         }
 
         window = WindowManager::createWindow(WindowType::map, size, WindowFlags::none, getEvents());
-        window->setWidgets(widgets);
+        window->setWidgets(kWidgets);
         window->initScrollWidgets();
         window->frameNo = 0;
 
@@ -2452,65 +2449,54 @@ namespace OpenLoco::Ui::Windows::MapWindow
     // 0x0046B5C0
     void centerOnViewPoint()
     {
-        auto mainWindow = WindowManager::getMainWindow();
-
+        auto* mainWindow = WindowManager::getMainWindow();
         if (mainWindow == nullptr)
         {
             return;
         }
 
-        auto viewport = mainWindow->viewports[0];
-
+        auto* viewport = mainWindow->viewports[0];
         if (viewport == nullptr)
         {
             return;
         }
 
-        auto window = WindowManager::find(WindowType::map, 0);
-
+        auto* window = WindowManager::find(WindowType::map, 0);
         if (window == nullptr)
         {
             return;
         }
 
-        auto x = viewport->viewWidth / 2;
-        auto y = viewport->viewHeight / 2;
-        x += viewport->viewX;
-        y += viewport->viewY;
-        x /= 32;
-        y /= 16;
-        x += kViewFrameOffsetsByRotation[getCurrentRotation()].x;
-        y += kViewFrameOffsetsByRotation[getCurrentRotation()].y;
+        // Ensure minimap/scroll widget has been resized
+        window->callPrepareDraw();
 
-        auto width = widgets[widx::scrollview].width() - 10;
-        auto height = widgets[widx::scrollview].height() - 10;
-        x -= width / 2;
-        x = std::max(x, 0);
-        y -= height / 2;
-        y = std::max(y, 0);
+        const int16_t vpCentreX = ((viewport->viewWidth / 2) + viewport->viewX) / 32;
+        const int16_t vpCentreY = ((viewport->viewHeight / 2) + viewport->viewY) / 16;
 
-        width = -width;
-        height = -height;
-        width += window->scrollAreas[0].contentWidth;
-        height += window->scrollAreas[0].contentHeight;
+        auto& widget = window->widgets[widx::scrollview];
+        const int16_t miniMapWidth = widget.width() - ScrollView::barWidth;
+        const int16_t miniMapHeight = widget.height() - ScrollView::barWidth;
 
-        width -= x;
-        if (width < 0)
+        const int16_t visibleMapWidth = window->scrollAreas[0].contentWidth - miniMapWidth;
+        const int16_t visibleMapHeight = window->scrollAreas[0].contentHeight - miniMapHeight;
+
+        auto& offset = kViewFrameOffsetsByRotation[getCurrentRotation()];
+        int16_t centreX = std::max(vpCentreX + offset.x - (miniMapWidth / 2), 0);
+        int16_t centreY = std::max(vpCentreY + offset.y - (miniMapHeight / 2), 0);
+
+        if (visibleMapWidth < centreX)
         {
-            x += width;
-            x = std::max(x, 0);
+            centreX = std::max(centreX + (visibleMapWidth - centreX), 0);
         }
 
-        height -= y;
-        if (height < 0)
+        if (visibleMapHeight < centreY)
         {
-            y += height;
-            y = std::max(y, 0);
+            centreY = std::max(centreY + (visibleMapHeight - centreY), 0);
         }
 
-        window->scrollAreas[0].contentOffsetX = x;
-        window->scrollAreas[0].contentOffsetY = y;
+        window->scrollAreas[0].contentOffsetX = centreX;
+        window->scrollAreas[0].contentOffsetY = centreY;
 
-        Ui::ScrollView::updateThumbs(window, widx::scrollview);
+        Ui::ScrollView::updateThumbs(*window, widx::scrollview);
     }
 }

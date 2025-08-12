@@ -39,26 +39,35 @@ jobs:
           fetch-depth: 0
           submodules: true
       - name: Restore artifacts, or setup vcpkg
-        uses: lukka/run-vcpkg@v11.4
+        uses: lukka/run-vcpkg@v11.5
         with:
           vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-          vcpkgGitCommitId: 1de2026f28ead93ff1773e6e680387643e914ea1
+          vcpkgGitCommitId: 89dc8be6dbcf18482a5a1bf86a2f4615c939b0fb
       - name: Build OpenLoco
         shell: cmd
         run: |
           cmake --preset windows-msvc
           cmake --build --preset windows-msvc-release
-      - name: Build artifacts
+      - name: Build release
         run: |
           mkdir artifacts | Out-Null
           Copy-Item CHANGELOG.md,CONTRIBUTORS.md,LICENSE artifacts
           Copy-Item build\windows-msvc\Release\* artifacts -Recurse
-      - name: Upload artifacts
+      - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
-          name: OpenLoco-${{ runner.os }}-Win32-cmake
-          path: artifacts
+          name: OpenLoco-${{ runner.os }}-Win32
+          path: |
+            artifacts/
+            !artifacts/*.pdb
           if-no-files-found: error
+      - name: Upload symbols artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenLoco-${{ runner.os }}-Win32-symbols
+          path: |
+            artifacts/*.pdb
+          if-no-files-found: warn
       - name: Checkout Assets
         if: ${{ github.repository == 'OpenLoco/OpenLoco' && env.ASSETS_SSH_KEY != null }} 
         uses: actions/checkout@v4
@@ -72,7 +81,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: OpenLoco/TestData
-          ref: 57034171c02e62376c87116abcdc2893dfacfd86
+          ref: 3621e988e3b3cdbbd4040119991afbc72e6d72f2
           path: TestData
       - name: Run Simulate Test
         if: ${{ github.repository == 'OpenLoco/OpenLoco' && env.ASSETS_SSH_KEY != null }} 

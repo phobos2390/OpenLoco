@@ -500,16 +500,16 @@ namespace OpenLoco::CompanyManager
         AiPlaystyleFlags::none,
         AiPlaystyleFlags::none,
         AiPlaystyleFlags::none,
-        AiPlaystyleFlags::unk1 | AiPlaystyleFlags::unk2 | AiPlaystyleFlags::unk4 | AiPlaystyleFlags::unk5,
-        AiPlaystyleFlags::unk0 | AiPlaystyleFlags::unk2 | AiPlaystyleFlags::unk4 | AiPlaystyleFlags::unk5,
-        AiPlaystyleFlags::unk0 | AiPlaystyleFlags::unk1 | AiPlaystyleFlags::unk2 | AiPlaystyleFlags::unk3 | AiPlaystyleFlags::unk5,
-        AiPlaystyleFlags::unk1 | AiPlaystyleFlags::unk2 | AiPlaystyleFlags::unk4 | AiPlaystyleFlags::unk5,
+        AiPlaystyleFlags::unk1 | AiPlaystyleFlags::unk2 | AiPlaystyleFlags::noAir | AiPlaystyleFlags::noWater,
+        AiPlaystyleFlags::unk0 | AiPlaystyleFlags::unk2 | AiPlaystyleFlags::noAir | AiPlaystyleFlags::noWater,
+        AiPlaystyleFlags::unk0 | AiPlaystyleFlags::unk1 | AiPlaystyleFlags::unk2 | AiPlaystyleFlags::unk3 | AiPlaystyleFlags::noWater,
+        AiPlaystyleFlags::unk1 | AiPlaystyleFlags::unk2 | AiPlaystyleFlags::noAir | AiPlaystyleFlags::noWater,
         AiPlaystyleFlags::unk6,
-        AiPlaystyleFlags::unk1 | AiPlaystyleFlags::unk2 | AiPlaystyleFlags::unk4 | AiPlaystyleFlags::unk5,
+        AiPlaystyleFlags::unk1 | AiPlaystyleFlags::unk2 | AiPlaystyleFlags::noAir | AiPlaystyleFlags::noWater,
         AiPlaystyleFlags::unk6,
         AiPlaystyleFlags::unk6,
         AiPlaystyleFlags::unk6,
-        AiPlaystyleFlags::unk0 | AiPlaystyleFlags::unk1 | AiPlaystyleFlags::unk3 | AiPlaystyleFlags::unk4 | AiPlaystyleFlags::unk5,
+        AiPlaystyleFlags::unk0 | AiPlaystyleFlags::unk1 | AiPlaystyleFlags::unk3 | AiPlaystyleFlags::noAir | AiPlaystyleFlags::noWater,
     };
 
     static constexpr std::array<StringId, 13> kCompanyAiNamePrefixes = {
@@ -743,7 +743,7 @@ namespace OpenLoco::CompanyManager
             thought.type = AiThoughtType::null;
         }
         company->headquartersX = -1;
-        company->var_25BE = 0xFFU;
+        company->var_25BE = AiThoughtType::null;
         company->unlockedVehicles.reset();
         company->availableVehicles = 0;
         company->currentLoan = getInflationAdjustedStartingLoan();
@@ -782,9 +782,30 @@ namespace OpenLoco::CompanyManager
         return chosenCompanyId;
     }
 
-    static void sub_4A6DA9()
+    // 0x004A6DA9
+    void sub_4A6DA9()
     {
-        call(0x004A6DA9);
+        auto* playerCompany = getPlayerCompany();
+        auto& gameState = getGameState();
+        auto roadType = gameState.lastTrackTypeOption | (1U << 7);
+        if (roadType == 0xFFU)
+        {
+            const auto roads = companyGetAvailableRoads(playerCompany->id());
+            roadType = roads.empty() ? 0xFFU : roads[0];
+        }
+        gameState.lastRoadOption = roadType;
+        const auto tracks = companyGetAvailableRailTracks(playerCompany->id());
+        gameState.lastRailroadOption = tracks.empty() ? 0xFFU : tracks[0];
+
+        auto vehicleTypeInt = Numerics::bitScanForward(playerCompany->availableVehicles);
+        const auto vehicleType = vehicleTypeInt == -1 ? VehicleType::train : static_cast<VehicleType>(vehicleTypeInt);
+
+        gameState.lastVehicleType = vehicleType;
+        gameState.lastBuildVehiclesOption = vehicleType;
+        gameState.lastAirport = 0xFFU;
+        gameState.lastShipPort = 0xFFU;
+
+        Ui::Windows::Construction::updateAvailableAirportAndDockOptions();
     }
 
     // 0x0042F863

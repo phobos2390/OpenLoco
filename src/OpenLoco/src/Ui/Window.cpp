@@ -2,6 +2,7 @@
 #include "Config.h"
 #include "Entities/EntityManager.h"
 #include "Graphics/Colour.h"
+#include "Graphics/RenderTarget.h"
 #include "Graphics/SoftwareDrawingEngine.h"
 #include "Input.h"
 #include "Localisation/FormatArguments.hpp"
@@ -278,7 +279,6 @@ namespace OpenLoco::Ui
             {
                 continue;
             }
-            this->callOnResize();
 
             viewport_pos centre;
 
@@ -459,7 +459,7 @@ namespace OpenLoco::Ui
 
             if (invalidate)
             {
-                Ui::ScrollView::updateThumbs(this, widx);
+                Ui::ScrollView::updateThumbs(*this, widx);
                 this->invalidate();
             }
 
@@ -499,23 +499,37 @@ namespace OpenLoco::Ui
                 this->scrollAreas[s].flags |= Ui::ScrollFlags::vscrollbarVisible;
             }
 
-            Ui::ScrollView::updateThumbs(this, widx);
+            Ui::ScrollView::updateThumbs(*this, widx);
             s++;
         }
     }
 
-    int8_t Window::getScrollDataIndex(WidgetIndex_t index)
+    int8_t Window::getScrollDataIndex(WidgetIndex_t targetIndex)
     {
-        int8_t scrollIndex = 0;
-        for (int i = 0; i < index; i++)
+        if (widgets[targetIndex].type != WidgetType::scrollview)
         {
-            if (this->widgets[i].type == Ui::WidgetType::scrollview)
+            assert(false);
+            return -1;
+        }
+
+        auto widgetIndex = 0;
+        auto scrollIndex = 0;
+        for (auto& widget : widgets)
+        {
+            widgetIndex++;
+            if (widgetIndex == targetIndex)
+            {
+                return scrollIndex;
+            }
+
+            if (widget.type == WidgetType::scrollview)
             {
                 scrollIndex++;
             }
         }
 
-        return scrollIndex;
+        assert(false);
+        return -2;
     }
 
     // 0x004CC7CB
@@ -672,7 +686,17 @@ namespace OpenLoco::Ui
         viewportConfigurations[0].viewportTargetSprite = targetEntity;
     }
 
-    bool Window::viewportIsFocusedOnEntity() const
+    bool Window::viewportIsFocusedOnEntity(EntityId targetEntity) const
+    {
+        if (targetEntity == EntityId::null || viewports[0] == nullptr || savedView.isEmpty())
+        {
+            return false;
+        }
+
+        return viewportConfigurations[0].viewportTargetSprite == targetEntity;
+    }
+
+    bool Window::viewportIsFocusedOnAnyEntity() const
     {
         if (viewports[0] == nullptr || savedView.isEmpty())
         {
@@ -874,18 +898,6 @@ namespace OpenLoco::Ui
         this->x += dx;
         this->y += dy;
 
-        if (this->viewports[0] != nullptr)
-        {
-            this->viewports[0]->x += dx;
-            this->viewports[0]->y += dy;
-        }
-
-        if (this->viewports[1] != nullptr)
-        {
-            this->viewports[1]->x += dx;
-            this->viewports[1]->y += dy;
-        }
-
         this->invalidate();
 
         return true;
@@ -933,18 +945,6 @@ namespace OpenLoco::Ui
         this->x += offset.x;
         this->y += offset.y;
         this->invalidate();
-
-        if (this->viewports[0] != nullptr)
-        {
-            this->viewports[0]->x += offset.x;
-            this->viewports[0]->y += offset.y;
-        }
-
-        if (this->viewports[1] != nullptr)
-        {
-            this->viewports[1]->x += offset.x;
-            this->viewports[1]->y += offset.y;
-        }
     }
 
     bool Window::moveToCentre()
@@ -1080,24 +1080,24 @@ namespace OpenLoco::Ui
         eventHandlers->onToolDown(*this, widgetIndex, id, xPos, yPos);
     }
 
-    void Window::callToolDragContinue(const WidgetIndex_t widgetIndex, const WidgetId id, const int16_t xPos, const int16_t yPos)
+    void Window::callToolDrag(const WidgetIndex_t widgetIndex, const WidgetId id, const int16_t xPos, const int16_t yPos)
     {
-        if (eventHandlers->toolDragContinue == nullptr)
+        if (eventHandlers->toolDrag == nullptr)
         {
             return;
         }
 
-        eventHandlers->toolDragContinue(*this, widgetIndex, id, xPos, yPos);
+        eventHandlers->toolDrag(*this, widgetIndex, id, xPos, yPos);
     }
 
-    void Window::callToolDragEnd(const WidgetIndex_t widgetIndex, const WidgetId id)
+    void Window::callToolUp(const WidgetIndex_t widgetIndex, const WidgetId id, const int16_t xPos, const int16_t yPos)
     {
-        if (eventHandlers->toolDragEnd == nullptr)
+        if (eventHandlers->toolUp == nullptr)
         {
             return;
         }
 
-        eventHandlers->toolDragEnd(*this, widgetIndex, id);
+        eventHandlers->toolUp(*this, widgetIndex, id, xPos, yPos);
     }
 
     void Window::callToolAbort(WidgetIndex_t widgetIndex, const WidgetId id)
@@ -1307,7 +1307,7 @@ namespace OpenLoco::Ui
     {
         if (this->hasFlags(WindowFlags::transparent) && !this->hasFlags(WindowFlags::noBackground))
         {
-            drawingCtx.fillRect(this->x, this->y, this->x + this->width - 1, this->y + this->height - 1, enumValue(ExtColour::unk34), Gfx::RectFlags::transparent);
+            drawingCtx.fillRect(0, 0, this->width - 1, this->height - 1, enumValue(ExtColour::unk34), Gfx::RectFlags::transparent);
         }
 
         uint64_t pressedWidget = 0;
@@ -1348,10 +1348,10 @@ namespace OpenLoco::Ui
         if (this->hasFlags(WindowFlags::whiteBorderMask))
         {
             drawingCtx.fillRectInset(
-                this->x,
-                this->y,
-                this->x + this->width - 1,
-                this->y + this->height - 1,
+                0,
+                0,
+                this->width - 1,
+                this->height - 1,
                 Colour::white,
                 Gfx::RectInsetFlags::fillNone);
         }

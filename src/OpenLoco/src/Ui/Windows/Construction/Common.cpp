@@ -519,6 +519,117 @@ namespace OpenLoco::Ui::Windows::Construction
         return createTrackConstructionWindow();
     }
 
+    // 0x004A6E2B
+    // Update available road and rail for player company
+    void updateAvailableRoadAndRailOptions()
+    {
+        if (getGameState().lastRoadOption == 0xFF)
+        {
+            uint8_t lastRoadOption = getGameState().lastTrackTypeOption;
+            if (lastRoadOption == 0xFF)
+            {
+                const auto availableObjects = companyGetAvailableRoads(CompanyManager::getControllingId());
+                if (!availableObjects.empty())
+                {
+                    lastRoadOption = availableObjects[0];
+                }
+            }
+            else
+            {
+                lastRoadOption |= 1 << 7;
+            }
+            getGameState().lastRoadOption = lastRoadOption;
+            WindowManager::invalidate(Ui::WindowType::topToolbar, 0);
+        }
+
+        if (getGameState().lastRailroadOption == 0xFF)
+        {
+            const auto availableObjects = companyGetAvailableRailTracks(CompanyManager::getControllingId());
+            if (!availableObjects.empty())
+            {
+                getGameState().lastRailroadOption = availableObjects[0];
+            }
+            WindowManager::invalidate(Ui::WindowType::topToolbar, 0);
+        }
+    }
+
+    // 0x004A6E9B
+    // Update available airports and docks for player company
+    void updateAvailableAirportAndDockOptions()
+    {
+        if (getGameState().lastAirport != 0xFF)
+        {
+            const auto* airportObj = ObjectManager::get<AirportObject>(getGameState().lastAirport);
+            if (getGameState().currentYear > airportObj->obsoleteYear)
+            {
+                getGameState().lastAirport = 0xFF;
+            }
+        }
+
+        if (getGameState().lastAirport == 0xFF)
+        {
+            const auto availableObjects = getAvailableAirports();
+            if (!availableObjects.empty())
+            {
+                getGameState().lastAirport = availableObjects[0];
+                bool found = false;
+                for (size_t vehicleObjectIndex = 0; vehicleObjectIndex < ObjectManager::getMaxObjects(ObjectType::vehicle); ++vehicleObjectIndex)
+                {
+                    const auto* vehicleObject = ObjectManager::get<VehicleObject>(vehicleObjectIndex);
+                    if (vehicleObject == nullptr)
+                    {
+                        continue;
+                    }
+                    if (vehicleObject->mode == TransportMode::air)
+                    {
+                        const Company* company = CompanyManager::get(getGameState().playerCompanies[0]);
+                        if (company->unlockedVehicles.get(vehicleObjectIndex))
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if (!found)
+                {
+                    getGameState().lastAirport = 0xFF;
+                }
+            }
+        }
+
+        if (getGameState().lastShipPort == 0xFF)
+        {
+            const auto availableObjects = getAvailableDocks();
+            if (!availableObjects.empty())
+            {
+                getGameState().lastShipPort = availableObjects[0];
+                bool found = false;
+                for (size_t vehicleObjectIndex = 0; vehicleObjectIndex < ObjectManager::getMaxObjects(ObjectType::vehicle); ++vehicleObjectIndex)
+                {
+                    const auto* vehicleObject = ObjectManager::get<VehicleObject>(vehicleObjectIndex);
+                    if (vehicleObject == nullptr)
+                    {
+                        continue;
+                    }
+                    if (vehicleObject->mode == TransportMode::water)
+                    {
+                        const Company* company = CompanyManager::get(getGameState().playerCompanies[0]);
+                        if (company->unlockedVehicles.get(vehicleObjectIndex))
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if (!found)
+                {
+                    getGameState().lastShipPort = 0xFF;
+                }
+            }
+        }
+        WindowManager::invalidate(Ui::WindowType::topToolbar, 0);
+    }
+
     // 0x004A6FAC
     void sub_4A6FAC()
     {
@@ -615,7 +726,7 @@ namespace OpenLoco::Ui::Windows::Construction
             std::span<const Widget> widgets;
             const widx widgetIndex;
             const WindowEventList& events;
-            void (*tabReset)(Window*);
+            void (*tabReset)(Window&);
         };
 
         // clang-format off
@@ -714,9 +825,9 @@ namespace OpenLoco::Ui::Windows::Construction
         }
 
         // 0x0049D93A
-        void switchTab(Window* self, WidgetIndex_t widgetIndex)
+        void switchTab(Window& self, WidgetIndex_t widgetIndex)
         {
-            if (self->currentTab == widgetIndex - widx::tab_construction)
+            if (self.currentTab == widgetIndex - widx::tab_construction)
             {
                 return;
             }
@@ -740,41 +851,41 @@ namespace OpenLoco::Ui::Windows::Construction
             _cState->modCost = 0x80000000;
             _cState->byte_1136076 = 0;
 
-            if (ToolManager::isToolActive(self->type, self->number))
+            if (ToolManager::isToolActive(self.type, self.number))
             {
                 ToolManager::toolCancel();
             }
 
-            self->currentTab = widgetIndex - widx::tab_construction;
-            self->frameNo = 0;
-            self->flags &= ~(WindowFlags::flag_16);
+            self.currentTab = widgetIndex - widx::tab_construction;
+            self.frameNo = 0;
+            self.flags &= ~(WindowFlags::flag_16);
 
             auto tabInfo = tabInformationByTabOffset[widgetIndex - widx::tab_construction];
 
-            self->eventHandlers = &tabInfo.events;
-            self->activatedWidgets = 0;
-            self->setWidgets(tabInfo.widgets);
-            self->holdableWidgets = 0;
+            self.eventHandlers = &tabInfo.events;
+            self.activatedWidgets = 0;
+            self.setWidgets(tabInfo.widgets);
+            self.holdableWidgets = 0;
 
-            setDisabledWidgets(self);
+            setDisabledWidgets(&self);
 
-            self->invalidate();
+            self.invalidate();
 
-            self->width = self->widgets[widx::frame].right + 1;
-            self->height = self->widgets[widx::frame].bottom + 1;
+            self.width = self.widgets[widx::frame].right + 1;
+            self.height = self.widgets[widx::frame].bottom + 1;
 
-            self->callOnResize();
-            self->callPrepareDraw();
-            self->initScrollWidgets();
-            self->invalidate();
+            self.callOnResize();
+            self.callPrepareDraw();
+            self.initScrollWidgets();
+            self.invalidate();
 
             tabInfo.tabReset(self);
 
-            self->moveInsideScreenEdges();
+            self.moveInsideScreenEdges();
         }
 
         // 0x0049EFEF
-        static void drawRoadTabs(Window* self, Gfx::DrawingContext& drawingCtx)
+        static void drawRoadTabs(Window& self, Gfx::DrawingContext& drawingCtx)
         {
             auto company = CompanyManager::getPlayerCompany();
             auto companyColour = company->mainColours.primary;
@@ -782,9 +893,9 @@ namespace OpenLoco::Ui::Windows::Construction
             // Construction Tab
             {
                 auto imageId = roadObj->image;
-                if (self->currentTab == widx::tab_construction - widx::tab_construction)
+                if (self.currentTab == widx::tab_construction - widx::tab_construction)
                 {
-                    imageId += (self->frameNo / 4) % 32;
+                    imageId += (self.frameNo / 4) % 32;
                 }
 
                 Widget::drawTab(self, drawingCtx, Gfx::recolour(imageId, companyColour), widx::tab_construction);
@@ -792,13 +903,13 @@ namespace OpenLoco::Ui::Windows::Construction
             // Station Tab
             {
                 Widget::drawTab(self, drawingCtx, ImageIds::null, widx::tab_station);
-                if (!self->isDisabled(widx::tab_station))
+                if (!self.isDisabled(widx::tab_station))
                 {
-                    auto x = self->widgets[widx::tab_station].left + self->x + 1;
-                    auto y = self->widgets[widx::tab_station].top + self->y + 1;
+                    auto x = self.widgets[widx::tab_station].left + 1;
+                    auto y = self.widgets[widx::tab_station].top + 1;
                     auto width = 29;
                     auto height = 25;
-                    if (self->currentTab == widx::tab_station - widx::tab_construction)
+                    if (self.currentTab == widx::tab_station - widx::tab_construction)
                     {
                         height++;
                     }
@@ -835,10 +946,10 @@ namespace OpenLoco::Ui::Windows::Construction
             // Overhead tab
             {
                 Widget::drawTab(self, drawingCtx, ImageIds::null, widx::tab_overhead);
-                if (!self->isDisabled(widx::tab_station))
+                if (!self.isDisabled(widx::tab_overhead))
                 {
-                    auto x = self->widgets[widx::tab_overhead].left + self->x + 2;
-                    auto y = self->widgets[widx::tab_overhead].top + self->y + 2;
+                    auto x = self.widgets[widx::tab_overhead].left + 2;
+                    auto y = self.widgets[widx::tab_overhead].top + 2;
 
                     for (auto i = 0; i < 2; i++)
                     {
@@ -846,9 +957,9 @@ namespace OpenLoco::Ui::Windows::Construction
                         {
                             auto roadExtraObj = ObjectManager::get<RoadExtraObject>(_cState->modList[i]);
                             auto imageId = roadExtraObj->var_0E;
-                            if (self->currentTab == widx::tab_overhead - widx::tab_construction)
+                            if (self.currentTab == widx::tab_overhead - widx::tab_construction)
                             {
-                                imageId += (self->frameNo / 2) % 8;
+                                imageId += (self.frameNo / 2) % 8;
                             }
                             drawingCtx.drawImage(x, y, imageId);
                         }
@@ -879,7 +990,7 @@ namespace OpenLoco::Ui::Windows::Construction
         };
 
         // 0x0049ED40
-        static void drawTrackTabs(Window* self, Gfx::DrawingContext& drawingCtx)
+        static void drawTrackTabs(Window& self, Gfx::DrawingContext& drawingCtx)
         {
             auto company = CompanyManager::getPlayerCompany();
             auto companyColour = company->mainColours.primary;
@@ -887,9 +998,9 @@ namespace OpenLoco::Ui::Windows::Construction
             // Construction Tab
             {
                 auto imageId = trackObj->image;
-                if (self->currentTab == widx::tab_construction - widx::tab_construction)
+                if (self.currentTab == widx::tab_construction - widx::tab_construction)
                 {
-                    imageId += kTrackPreviewImages[(self->frameNo / 4) % kTrackPreviewImages.size()];
+                    imageId += kTrackPreviewImages[(self.frameNo / 4) % kTrackPreviewImages.size()];
                 }
 
                 Widget::drawTab(self, drawingCtx, Gfx::recolour(imageId, companyColour), widx::tab_construction);
@@ -913,13 +1024,13 @@ namespace OpenLoco::Ui::Windows::Construction
                     else
                     {
                         Widget::drawTab(self, drawingCtx, ImageIds::null, widx::tab_station);
-                        if (!self->isDisabled(widx::tab_station))
+                        if (!self.isDisabled(widx::tab_station))
                         {
-                            auto x = self->widgets[widx::tab_station].left + self->x + 1;
-                            auto y = self->widgets[widx::tab_station].top + self->y + 1;
+                            auto x = self.widgets[widx::tab_station].left + 1;
+                            auto y = self.widgets[widx::tab_station].top + 1;
                             auto width = 29;
                             auto height = 25;
-                            if (self->currentTab == widx::tab_station - widx::tab_construction)
+                            if (self.currentTab == widx::tab_station - widx::tab_construction)
                             {
                                 height++;
                             }
@@ -959,13 +1070,13 @@ namespace OpenLoco::Ui::Windows::Construction
             // Signal Tab
             {
                 Widget::drawTab(self, drawingCtx, ImageIds::null, widx::tab_signal);
-                if (!self->isDisabled(widx::tab_signal))
+                if (!self.isDisabled(widx::tab_signal))
                 {
-                    auto x = self->widgets[widx::tab_signal].left + self->x + 1;
-                    auto y = self->widgets[widx::tab_signal].top + self->y + 1;
+                    auto x = self.widgets[widx::tab_signal].left + 1;
+                    auto y = self.widgets[widx::tab_signal].top + 1;
                     auto width = 29;
                     auto height = 25;
-                    if (self->currentTab == widx::tab_station - widx::tab_construction)
+                    if (self.currentTab == widx::tab_station - widx::tab_construction)
                     {
                         height++;
                     }
@@ -978,11 +1089,11 @@ namespace OpenLoco::Ui::Windows::Construction
 
                         auto trainSignalObject = ObjectManager::get<TrainSignalObject>(_cState->lastSelectedSignal);
                         auto imageId = trainSignalObject->image;
-                        if (self->currentTab == widx::tab_signal - widx::tab_construction)
+                        if (self.currentTab == widx::tab_signal - widx::tab_construction)
                         {
                             auto frames = signalFrames[(((trainSignalObject->numFrames + 2) / 3) - 2)];
                             auto frameCount = std::size(frames) - 1;
-                            frameCount &= (self->frameNo >> trainSignalObject->animationSpeed);
+                            frameCount &= (self.frameNo >> trainSignalObject->animationSpeed);
                             auto frameIndex = frames[frameCount];
                             frameIndex <<= 3;
                             imageId += frameIndex;
@@ -998,10 +1109,10 @@ namespace OpenLoco::Ui::Windows::Construction
             // Overhead Tab
             {
                 Widget::drawTab(self, drawingCtx, ImageIds::null, widx::tab_overhead);
-                if (!self->isDisabled(widx::tab_station))
+                if (!self.isDisabled(widx::tab_overhead))
                 {
-                    auto x = self->widgets[widx::tab_overhead].left + self->x + 2;
-                    auto y = self->widgets[widx::tab_overhead].top + self->y + 2;
+                    auto x = self.widgets[widx::tab_overhead].left + 2;
+                    auto y = self.widgets[widx::tab_overhead].top + 2;
 
                     for (auto i = 0; i < 4; i++)
                     {
@@ -1009,9 +1120,9 @@ namespace OpenLoco::Ui::Windows::Construction
                         {
                             auto trackExtraObj = ObjectManager::get<TrackExtraObject>(_cState->modList[i]);
                             auto imageId = trackExtraObj->var_0E;
-                            if (self->currentTab == widx::tab_overhead - widx::tab_construction)
+                            if (self.currentTab == widx::tab_overhead - widx::tab_construction)
                             {
-                                imageId += (self->frameNo / 2) % 8;
+                                imageId += (self.frameNo / 2) % 8;
                             }
                             drawingCtx.drawImage(x, y, imageId);
                         }
@@ -1023,7 +1134,7 @@ namespace OpenLoco::Ui::Windows::Construction
         }
 
         // 0x0049ED33
-        void drawTabs(Window* self, Gfx::DrawingContext& drawingCtx)
+        void drawTabs(Window& self, Gfx::DrawingContext& drawingCtx)
         {
             if (_cState->trackType & (1 << 7))
             {
