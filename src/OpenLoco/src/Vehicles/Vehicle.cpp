@@ -422,7 +422,7 @@ namespace OpenLoco::Vehicles
     }
 
     // 0x004B1876
-    static EntityId checkForCollisions(VehicleBogie& bogie, World::Pos3& loc)
+    EntityId checkForCollisions(VehicleBogie& bogie, World::Pos3& loc)
     {
         if (bogie.mode != TransportMode::rail)
         {
@@ -1141,6 +1141,8 @@ namespace OpenLoco::Vehicles
                 regs = backup;
                 return 0;
             });
+
+        registerHeadHooks();
     }
 
     bool hasUpdateVar1136114Flags(UpdateVar1136114Flags flags)
