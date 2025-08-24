@@ -251,6 +251,9 @@ namespace OpenLoco::Ui::Windows::Construction
         void removeBlueprintGhosts();
         void previousTrackPiece(Window& self);
         void nextTrackPiece(Window& self);
+        void nextLeftTrackPiece(Window& self);
+        void nextRightTrackPiece(Window& self);
+        void setTrackPieceToStraight(Window& self);
         void previousSlope(Window& self);
         void nextSlope(Window& self);
         void buildAtCurrentPos(Window& self);

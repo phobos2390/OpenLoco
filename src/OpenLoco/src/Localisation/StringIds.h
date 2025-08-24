@@ -2151,7 +2151,11 @@ namespace OpenLoco::StringIds
     constexpr StringId cheat_keep_cargo_modify_pickup = 2435;
     constexpr StringId tooltip_keep_cargo_modify_pickup = 2436;
     constexpr StringId sortComponents = 2437;
-
+    constexpr StringId shortcut_max_clip_height_increment = 2501;
+    constexpr StringId shortcut_max_clip_height_decrement = 2502;
+    constexpr StringId shortcut_construction_next_left_track_piece = 2503;
+    constexpr StringId shortcut_construction_next_right_track_piece = 2504;
+    constexpr StringId shortcut_construction_set_track_piece_to_straight = 2505;
     constexpr StringId temporary_object_load_str_0 = 8192;
     constexpr StringId temporary_object_load_str_1 = 8193;
     constexpr StringId temporary_object_load_str_2 = 8194;

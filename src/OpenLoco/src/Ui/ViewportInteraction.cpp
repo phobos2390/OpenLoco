@@ -1513,6 +1513,7 @@ namespace OpenLoco::Ui::ViewportInteraction
             // Todo: should this pass the cullHeight...
 
             auto session = Paint::PaintSession(_rt2, options);
+            session.setMaxClipHeight(getMaxClipHeight());
             session.generate();
             session.arrangeStructs();
             interaction = session.getNormalInteractionInfo(flags);
