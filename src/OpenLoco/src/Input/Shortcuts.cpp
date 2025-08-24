@@ -638,6 +638,33 @@ namespace OpenLoco::Input::Shortcuts
         }
     }
 
+    static void constructionNextLeftTrackPiece()
+    {
+        auto window = WindowManager::find(WindowType::construction);
+        if (window != nullptr)
+        {
+            Ui::Windows::Construction::Construction::nextLeftTrackPiece(*window);
+        }
+    }
+
+    static void constructionNextRightTrackPiece()
+    {
+        auto window = WindowManager::find(WindowType::construction);
+        if (window != nullptr)
+        {
+            Ui::Windows::Construction::Construction::nextRightTrackPiece(*window);
+        }
+    }
+
+    static void constructionSetTrackPieceToStraight()
+    {
+        auto window = WindowManager::find(WindowType::construction);
+        if (window != nullptr)
+        {
+            Ui::Windows::Construction::Construction::setTrackPieceToStraight(*window);
+        }
+    }
+
     static void constructionPreviousSlope()
     {
         auto window = WindowManager::find(WindowType::construction);
@@ -752,6 +779,9 @@ namespace OpenLoco::Input::Shortcuts
         ShortcutManager::add(Shortcut::constructionNextTab,             StringIds::shortcut_construction_next_tab,              constructionNextTab,            "constructionNextTab",              "");
         ShortcutManager::add(Shortcut::constructionPreviousTrackPiece,  StringIds::shortcut_construction_previous_track_piece,  constructionPreviousTrackPiece, "constructionPreviousTrackPiece",   "");
         ShortcutManager::add(Shortcut::constructionNextTrackPiece,      StringIds::shortcut_construction_next_track_piece,      constructionNextTrackPiece,     "constructionNextTrackPiece",       "");
+        ShortcutManager::add(Shortcut::constructionNextLeftTrackPiece,      StringIds::shortcut_construction_next_left_track_piece,      constructionNextLeftTrackPiece,     "constructionNextLeftTrackPiece",       "");
+        ShortcutManager::add(Shortcut::constructionNextRightTrackPiece,      StringIds::shortcut_construction_next_right_track_piece,      constructionNextRightTrackPiece,     "constructionNextRightTrackPiece",       "");
+        ShortcutManager::add(Shortcut::constructionSetTrackPieceToStraight,      StringIds::shortcut_construction_set_track_piece_to_straight,      constructionSetTrackPieceToStraight,     "constructionSetTrackPieceToStraight",       "");
         ShortcutManager::add(Shortcut::constructionPreviousSlope,       StringIds::shortcut_construction_previous_slope,        constructionPreviousSlope,      "constructionPreviousSlope",        "");
         ShortcutManager::add(Shortcut::constructionNextSlope,           StringIds::shortcut_construction_next_slope,            constructionNextSlope,          "constructionNextSlope",            "");
         ShortcutManager::add(Shortcut::constructionBuildAtCurrentPos,   StringIds::shortcut_construction_build_at_current_pos,  constructionBuildAtCurrentPos,  "constructionBuildAtCurrentPos",    "");
