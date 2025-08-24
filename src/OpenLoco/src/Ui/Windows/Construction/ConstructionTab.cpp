@@ -38,6 +38,7 @@
 #include "Ui/Widgets/Wt3Widget.h"
 #include "World/CompanyManager.h"
 #include "World/Station.h"
+#include <map>
 
 using namespace OpenLoco::World;
 using namespace OpenLoco::World::TileManager;
@@ -139,6 +140,54 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
         widx::s_bend_dual_track_left, // s_bend_to_single_track; unused?
         widx::s_bend_dual_track_left, // turnaround
     };
+
+    static size_t leftTrackMonitor = widx::straight;
+    static size_t rightTrackMonitor = widx::straight;
+
+    static std::map<uint8_t, std::vector<WidgetIndex_t>> createLeftTrackPieceWidgetOrder()
+    {
+        std::map<uint8_t, std::vector<WidgetIndex_t>> leftTrackPieceMap;
+        uint8_t roadType = (1 << 7);
+        uint8_t trackType = 0;
+        leftTrackPieceMap.emplace(std::make_pair(roadType, std::vector<WidgetIndex_t>{}));
+        leftTrackPieceMap[roadType].push_back(widx::straight);
+        leftTrackPieceMap[roadType].push_back(widx::left_hand_curve_very_small);
+        leftTrackPieceMap[roadType].push_back(widx::left_hand_curve_small);
+        leftTrackPieceMap[roadType].push_back(widx::s_bend_dual_track_left);
+
+        leftTrackPieceMap.emplace(std::make_pair(trackType, std::vector<WidgetIndex_t>{}));
+        leftTrackPieceMap[trackType].push_back(widx::straight);
+        leftTrackPieceMap[trackType].push_back(widx::s_bend_left);
+        leftTrackPieceMap[trackType].push_back(widx::left_hand_curve_large);
+        leftTrackPieceMap[trackType].push_back(widx::left_hand_curve);
+        leftTrackPieceMap[trackType].push_back(widx::left_hand_curve_small);
+
+        return leftTrackPieceMap;
+    }
+
+    static std::map<uint8_t, std::vector<WidgetIndex_t>> createRightTrackPieceWidgetOrder()
+    {
+        std::map<uint8_t, std::vector<WidgetIndex_t>> rightTrackPieceMap;
+        uint8_t roadType = (1 << 7);
+        uint8_t trackType = 0;
+        rightTrackPieceMap.emplace(std::make_pair(roadType, std::vector<WidgetIndex_t>{}));
+        rightTrackPieceMap[roadType].push_back(widx::straight);
+        rightTrackPieceMap[roadType].push_back(widx::right_hand_curve_very_small);
+        rightTrackPieceMap[roadType].push_back(widx::right_hand_curve_small);
+        rightTrackPieceMap[roadType].push_back(widx::s_bend_dual_track_left);
+
+        rightTrackPieceMap.emplace(std::make_pair(trackType, std::vector<WidgetIndex_t>{}));
+        rightTrackPieceMap[trackType].push_back(widx::straight);
+        rightTrackPieceMap[trackType].push_back(widx::s_bend_right);
+        rightTrackPieceMap[trackType].push_back(widx::right_hand_curve_large);
+        rightTrackPieceMap[trackType].push_back(widx::right_hand_curve);
+        rightTrackPieceMap[trackType].push_back(widx::right_hand_curve_small);
+
+        return rightTrackPieceMap;
+    }
+
+    static std::map<uint8_t, std::vector<WidgetIndex_t>> leftTrackPieceWidgets = createLeftTrackPieceWidgetOrder();
+    static std::map<uint8_t, std::vector<WidgetIndex_t>> rightTrackPieceWidgets = createRightTrackPieceWidgetOrder();
 
     WindowEventList events;
 
@@ -3294,6 +3343,73 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
         if (next != -1)
         {
             self.callOnMouseDown(next, self.widgets[next].id);
+        }
+    }
+
+    void nextLeftTrackPiece(Window& self)
+    {
+        auto& cState = getConstructionState();
+        uint8_t tracktype = cState.trackType & (1 << 7);
+        leftTrackMonitor = (leftTrackMonitor + 1) % leftTrackPieceWidgets[tracktype].size();
+        rightTrackMonitor = 0;
+        WidgetIndex_t current = leftTrackPieceWidgets[tracktype][leftTrackMonitor];
+        bool continuing = true;
+
+        while (continuing)
+        {
+            if (self.widgets.size() <= static_cast<size_t>(current))
+            {
+                continuing = false;
+            }
+            if ((!self.isDisabled(current)) && (self.widgets.size() > static_cast<size_t>(current)) && (self.widgets[current].type != WidgetType::empty) && (!self.widgets[current].hidden))
+            {
+                continuing = false;
+                self.callOnMouseDown(current, self.widgets[current].id);
+            }
+            else
+            {
+                leftTrackMonitor = (leftTrackMonitor + 1) % leftTrackPieceWidgets[tracktype].size();
+                current = leftTrackPieceWidgets[tracktype][leftTrackMonitor];
+            }
+        }
+    }
+
+    void nextRightTrackPiece(Window& self)
+    {
+        auto& cState = getConstructionState();
+        uint8_t tracktype = cState.trackType & (1 << 7);
+        rightTrackMonitor = (rightTrackMonitor + 1) % rightTrackPieceWidgets[tracktype].size();
+        leftTrackMonitor = 0;
+        WidgetIndex_t current = rightTrackPieceWidgets[tracktype][rightTrackMonitor];
+        bool continuing = true;
+
+        while (continuing)
+        {
+            if (self.widgets.size() <= static_cast<size_t>(current))
+            {
+                continuing = false;
+            }
+            if ((!self.isDisabled(current)) && (self.widgets.size() > static_cast<size_t>(current)) && (self.widgets[current].type != WidgetType::empty) && (!self.widgets[current].hidden))
+            {
+                continuing = false;
+                self.callOnMouseDown(current, self.widgets[current].id);
+            }
+            else
+            {
+                rightTrackMonitor = (rightTrackMonitor + 1) % rightTrackPieceWidgets[tracktype].size();
+                current = rightTrackPieceWidgets[tracktype][rightTrackMonitor];
+            }
+        }
+    }
+
+    void setTrackPieceToStraight(Window& self)
+    {
+        WidgetIndex_t straightPiece = widx::straight;
+        leftTrackMonitor = 0;
+        rightTrackMonitor = 0;
+        if ((!self.isDisabled(straightPiece)) && (self.widgets.size() > static_cast<size_t>(straightPiece)) && (self.widgets[straightPiece].type != WidgetType::empty) && (!self.widgets[straightPiece].hidden))
+        {
+            self.callOnMouseDown(straightPiece, self.widgets[straightPiece].id);
         }
     }
 
