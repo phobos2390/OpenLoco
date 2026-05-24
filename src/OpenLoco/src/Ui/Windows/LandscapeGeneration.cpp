@@ -4,7 +4,6 @@
 #include "Graphics/Colour.h"
 #include "Graphics/ImageIds.h"
 #include "Graphics/RenderTarget.h"
-#include "Graphics/SoftwareDrawingEngine.h"
 #include "Graphics/TextRenderer.h"
 #include "Input.h"
 #include "Localisation/Conversion.h"
@@ -16,8 +15,8 @@
 #include "Objects/LandObject.h"
 #include "Objects/ObjectManager.h"
 #include "Objects/WaterObject.h"
-#include "Scenario.h"
-#include "ScenarioOptions.h"
+#include "Scenario/Scenario.h"
+#include "Scenario/ScenarioOptions.h"
 #include "Ui/Dropdown.h"
 #include "Ui/ToolManager.h"
 #include "Ui/Widget.h"
@@ -37,15 +36,13 @@
 #include "World/IndustryManager.h"
 #include "World/TownManager.h"
 #include <OpenLoco/Diagnostics/Logging.h>
-#include <OpenLoco/Interop/Interop.hpp>
 
 using namespace OpenLoco::Diagnostics;
-using namespace OpenLoco::Interop;
 
 namespace OpenLoco::Ui::Windows::LandscapeGeneration
 {
-    static constexpr Ui::Size32 kWindowSize = { 366, 217 };
-    static constexpr Ui::Size32 kLandTabSize = { 366, 252 };
+    static constexpr Ui::Size kWindowSize = { 366, 217 };
+    static constexpr Ui::Size kLandTabSize = { 366, 252 };
 
     static constexpr uint8_t kRowHeight = 22; // CJK: 22
 
@@ -514,10 +511,9 @@ namespace OpenLoco::Ui::Windows::LandscapeGeneration
 
                 case widx::browseHeightmapFile:
                 {
-                    if (Game::loadHeightmapOpen())
+                    if (auto res = Game::loadHeightmapOpen())
                     {
-                        static loco_global<char[512], 0x0112CE04> _savePath;
-                        World::MapGenerator::setPngHeightmapPath(fs::u8path(&*_savePath));
+                        World::MapGenerator::setPngHeightmapPath(fs::u8path(*res));
                         window.invalidate();
                     }
                     break;
@@ -702,9 +698,9 @@ namespace OpenLoco::Ui::Windows::LandscapeGeneration
         }
 
         // 0x0043E2AC
-        static void getScrollSize([[maybe_unused]] Ui::Window& window, [[maybe_unused]] uint32_t scrollIndex, [[maybe_unused]] uint16_t* scrollWidth, uint16_t* scrollHeight)
+        static void getScrollSize([[maybe_unused]] Ui::Window& window, [[maybe_unused]] uint32_t scrollIndex, [[maybe_unused]] int32_t& scrollWidth, int32_t& scrollHeight)
         {
-            *scrollHeight = 0;
+            scrollHeight = 0;
 
             for (uint16_t i = 0; i < kMaxLandObjects; i++)
             {
@@ -714,7 +710,7 @@ namespace OpenLoco::Ui::Windows::LandscapeGeneration
                     continue;
                 }
 
-                *scrollHeight += kRowHeight;
+                scrollHeight += kRowHeight;
             }
         }
 
@@ -847,7 +843,7 @@ namespace OpenLoco::Ui::Windows::LandscapeGeneration
 
             window.rowHover = landIndex;
 
-            Audio::playSound(Audio::SoundId::clickDown, window.widgets[widx::scrollview].right);
+            Audio::playSound(Audio::SoundId::clickDown, Audio::ChannelId::ui, window.widgets[widx::scrollview].right);
 
             const Widget& target = window.widgets[widx::scrollview];
             const int16_t dropdownX = window.x + target.left + kLandDropdownLeft + 1;
@@ -1622,7 +1618,7 @@ namespace OpenLoco::Ui::Windows::LandscapeGeneration
 
             self.currentTab = widgetIndex - widx::tab_options;
             self.frameNo = 0;
-            self.flags &= ~(WindowFlags::flag_16);
+            self.flags &= ~(WindowFlags::maximised);
             self.disabledWidgets = 0;
 
             static const uint64_t* holdableWidgetsByTab[] = {

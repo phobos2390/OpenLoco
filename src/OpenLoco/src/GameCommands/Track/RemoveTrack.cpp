@@ -1,4 +1,5 @@
 #include "RemoveTrack.h"
+#include "Audio/Audio.h"
 #include "Economy/Economy.h"
 #include "Map/RoadElement.h"
 #include "Map/SignalElement.h"
@@ -6,6 +7,7 @@
 #include "Map/Track/TrackData.h"
 #include "Map/TrackElement.h"
 #include "Objects/BridgeObject.h"
+#include "Objects/ObjectManager.h"
 #include "Objects/TrackExtraObject.h"
 #include "Objects/TrackObject.h"
 #include "Random.h"
@@ -99,63 +101,11 @@ namespace OpenLoco::GameCommands
         return totalCost;
     }
 
-    // 0x004795D1
-    static void setLevelCrossingFlags(const World::Pos3 pos)
-    {
-        auto findLevelTrackAndRoad = [pos](auto&& trackFunction, auto&& roadFunction) {
-            auto tile = World::TileManager::get(pos);
-            for (auto& el : tile)
-            {
-                if (el.baseHeight() != pos.z)
-                {
-                    continue;
-                }
-                if (el.isAiAllocated())
-                {
-                    continue;
-                }
-                auto* elTrack = el.as<World::TrackElement>();
-                if (elTrack != nullptr)
-                {
-                    if (elTrack->trackId() == 0)
-                    {
-                        trackFunction(*elTrack);
-                    }
-                }
-                auto* elRoad = el.as<World::RoadElement>();
-                if (elRoad != nullptr)
-                {
-                    if (elRoad->roadId() == 0)
-                    {
-                        roadFunction(*elRoad);
-                    }
-                }
-            }
-        };
-
-        bool hasRoad = false;
-        bool hasTrack = false;
-        findLevelTrackAndRoad(
-            [&hasTrack](World::TrackElement& elTrack) { hasTrack |= elTrack.hasLevelCrossing(); },
-            [&hasRoad](World::RoadElement& elRoad) { hasRoad |= elRoad.hasLevelCrossing(); });
-
-        if (hasRoad ^ hasTrack)
-        {
-            findLevelTrackAndRoad(
-                [hasTrack](World::TrackElement& elTrack) { if (hasTrack) { elTrack.setHasLevelCrossing(false); } },
-                [hasRoad](World::RoadElement& elRoad) { if (hasRoad) {
-                    elRoad.setHasLevelCrossing(false);
-                    elRoad.setUnk7_10(false);
-                    elRoad.setLevelCrossingObjectId(0);
-                } });
-        }
-    }
-
     // 0x0048B04E
     static void playTrackRemovalSound(const World::Pos3 pos)
     {
         const auto frequency = gPrng2().randNext(17955, 26146);
-        Audio::playSound(Audio::SoundId::demolish, pos, 0, frequency);
+        Audio::playSound(Audio::SoundId::demolish, Audio::ChannelId::effects, pos, 0, frequency);
     }
 
     // 0x0049C7F2
@@ -169,12 +119,12 @@ namespace OpenLoco::GameCommands
         auto* elTrack = getElTrackAt(args, flags, args.pos, args.index);
         if (elTrack == nullptr)
         {
-            return FAILURE;
+            return kFailure;
         }
 
         if ((flags & Flags::ghost) == 0 && !sub_431E6A(elTrack->owner(), reinterpret_cast<World::TileElement*>(elTrack)))
         {
-            return FAILURE;
+            return kFailure;
         }
 
         if (elTrack->hasSignal())
@@ -200,13 +150,13 @@ namespace OpenLoco::GameCommands
                 }
             }
 
-            if (auto cost = GameCommands::doCommand(srArgs, flags); cost != FAILURE)
+            if (auto cost = GameCommands::doCommand(srArgs, flags); cost != kFailure)
             {
                 totalRemovalCost += cost;
             }
             else
             {
-                return FAILURE;
+                return kFailure;
             }
         }
 
@@ -222,13 +172,13 @@ namespace OpenLoco::GameCommands
             tsArgs.index = args.index;
             tsArgs.type = args.trackObjectId;
 
-            if (auto cost = GameCommands::doCommand(tsArgs, flags); cost != FAILURE)
+            if (auto cost = GameCommands::doCommand(tsArgs, flags); cost != kFailure)
             {
                 totalRemovalCost += cost;
             }
             else
             {
-                return FAILURE;
+                return kFailure;
             }
         }
 
@@ -250,7 +200,7 @@ namespace OpenLoco::GameCommands
         {
             const auto trackLoc = trackStart + World::Pos3{ Math::Vector::rotate(World::Pos2{ piece.x, piece.y }, args.rotation), piece.z };
 
-            if (!(flags & Flags::aiAllocated))
+            if (shouldInvalidateTile(flags))
             {
                 World::TileManager::mapInvalidateTileFull(trackLoc);
             }
@@ -258,7 +208,7 @@ namespace OpenLoco::GameCommands
             auto* pieceElTrack = getElTrackAt(args, flags, trackLoc, piece.index);
             if (pieceElTrack == nullptr)
             {
-                return FAILURE;
+                return kFailure;
             }
 
             if (pieceElTrack->hasBridge())
@@ -273,7 +223,7 @@ namespace OpenLoco::GameCommands
             }
 
             World::TileManager::removeElement(*reinterpret_cast<World::TileElement*>(pieceElTrack));
-            setLevelCrossingFlags(trackLoc);
+            World::TileManager::setLevelCrossingFlags(trackLoc);
         }
 
         totalRemovalCost += pieceRemovalCost;

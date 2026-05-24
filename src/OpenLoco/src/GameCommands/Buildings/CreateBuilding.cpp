@@ -16,7 +16,7 @@
 #include "Objects/LandObject.h"
 #include "Objects/ObjectManager.h"
 #include "Objects/ScaffoldingObject.h"
-#include "ScenarioOptions.h"
+#include "Scenario/ScenarioOptions.h"
 #include "ViewportManager.h"
 #include "World/Industry.h"
 #include "World/Station.h"
@@ -37,7 +37,7 @@ namespace OpenLoco::GameCommands
 
         if (!World::TileManager::checkFreeElementsAndReorganise())
         {
-            return FAILURE;
+            return kFailure;
         }
 
         if (!buildingObj->hasFlags(BuildingObjectFlags::miscBuilding))
@@ -46,16 +46,17 @@ namespace OpenLoco::GameCommands
             if (!nearest.has_value())
             {
                 setErrorText(StringIds::town_must_be_built_first);
-                return FAILURE;
+                return kFailure;
             }
         }
 
         // This is identical to createIndustry but with a BuildingObject
         // TODO: look into making some sort of common version
         auto clearHeight = 0;
+        const auto partHeights = buildingObj->getBuildingPartHeights();
         for (auto part : buildingObj->getBuildingParts(args.variation))
         {
-            clearHeight += buildingObj->partHeights[part];
+            clearHeight += partHeights[part];
         }
         if (!args.buildImmediately && buildingObj->scaffoldingSegmentType != 0xFF)
         {
@@ -78,7 +79,7 @@ namespace OpenLoco::GameCommands
             const auto tilePos = World::toTileSpace(World::Pos2(args.pos) + offset.pos);
             if (!World::validCoords(tilePos))
             {
-                return FAILURE;
+                return kFailure;
             }
 
             if ((flags & Flags::apply) && !(flags & Flags::ghost))
@@ -94,7 +95,7 @@ namespace OpenLoco::GameCommands
                 if (surface->water())
                 {
                     setErrorText(StringIds::cant_build_this_underwater);
-                    return FAILURE;
+                    return kFailure;
                 }
 
                 const auto baseZ = std::min<World::SmallZ>(surface->baseZ(), (args.pos.z / World::kSmallZStep));
@@ -136,7 +137,7 @@ namespace OpenLoco::GameCommands
                 };
                 if (!World::TileClearance::applyClearAtStandardHeight(World::toWorldSpace(tilePos), baseZ, clearZ, qt, clearFunc))
                 {
-                    return FAILURE;
+                    return kFailure;
                 }
                 // TODO: This is dangerous pointer might be invalid?
                 if (surface->slope() || surface->baseHeight() != args.pos.z)
@@ -177,32 +178,32 @@ namespace OpenLoco::GameCommands
                                 if (elTrack != nullptr && !elTrack->isGhost() && !elTrack->hasBridge())
                                 {
                                     setErrorText(StringIds::empty);
-                                    return FAILURE;
+                                    return kFailure;
                                 }
                                 else if (elRoad != nullptr && !elRoad->isGhost() && !elRoad->hasBridge())
                                 {
                                     setErrorText(StringIds::empty);
-                                    return FAILURE;
+                                    return kFailure;
                                 }
                                 else if (elStation != nullptr && elStation->stationType() == StationType::airport)
                                 {
                                     setErrorText(StringIds::empty);
-                                    return FAILURE;
+                                    return kFailure;
                                 }
                                 else if (elBuilding != nullptr)
                                 {
                                     setErrorText(StringIds::empty);
-                                    return FAILURE;
+                                    return kFailure;
                                 }
                                 else if (elIndustry != nullptr)
                                 {
                                     setErrorText(StringIds::empty);
-                                    return FAILURE;
+                                    return kFailure;
                                 }
                                 else if (elTree != nullptr && args.pos.z + clearHeight <= elTree->baseHeight())
                                 {
                                     setErrorText(StringIds::empty);
-                                    return FAILURE;
+                                    return kFailure;
                                 }
                             }
                         }
@@ -230,7 +231,7 @@ namespace OpenLoco::GameCommands
                 auto* elBuilding = World::TileManager::insertElement<World::BuildingElement>(World::toWorldSpace(tilePos), args.pos.z / World::kSmallZStep, 0xF);
                 if (elBuilding == nullptr)
                 {
-                    return FAILURE;
+                    return kFailure;
                 }
                 elBuilding->setClearZ((clearHeight / World::kSmallZStep) + elBuilding->baseZ());
                 elBuilding->setRotation(args.rotation);
@@ -248,9 +249,10 @@ namespace OpenLoco::GameCommands
                 elBuilding->setIsMiscBuilding(buildingObj->hasFlags(BuildingObjectFlags::miscBuilding));
 
                 bool hasFrames = false;
+                const auto partAnimations = buildingObj->getBuildingPartAnimations();
                 for (auto part : buildingObj->getBuildingParts(args.variation))
                 {
-                    if (buildingObj->partAnimations[part].numFrames > 1)
+                    if (partAnimations[part].numFrames > 1)
                     {
                         hasFrames = true;
                     }
@@ -274,9 +276,9 @@ namespace OpenLoco::GameCommands
             auto* town = TownManager::updateTownInfo(args.pos, population, populationCapacity, 0, 1);
             if (town != nullptr)
             {
-                if (buildingObj->var_AC != 0xFF)
+                if (buildingObj->townAmenityCategory != TownAmenityCategory::none)
                 {
-                    town->var_150[buildingObj->var_AC]++;
+                    town->amenityCounts[enumValue(buildingObj->townAmenityCategory)]++;
                 }
             }
         }
