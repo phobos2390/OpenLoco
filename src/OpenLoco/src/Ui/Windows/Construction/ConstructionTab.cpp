@@ -3461,7 +3461,7 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
     void nextLeftTrackPiece(Window& self)
     {
         auto& cState = getConstructionState();
-        uint8_t tracktype = cState->trackType & (1 << 7);
+        uint8_t tracktype = cState.trackType & (1 << 7);
         leftTrackMonitor = (leftTrackMonitor + 1) % leftTrackPieceWidgets[tracktype].size();
         rightTrackMonitor = 0;
         WidgetIndex_t current = leftTrackPieceWidgets[tracktype][leftTrackMonitor];
@@ -3489,7 +3489,7 @@ namespace OpenLoco::Ui::Windows::Construction::Construction
     void nextRightTrackPiece(Window& self)
     {
         auto& cState = getConstructionState();
-        uint8_t tracktype = cState->trackType & (1 << 7);
+        uint8_t tracktype = cState.trackType & (1 << 7);
         rightTrackMonitor = (rightTrackMonitor + 1) % rightTrackPieceWidgets[tracktype].size();
         leftTrackMonitor = 0;
         WidgetIndex_t current = rightTrackPieceWidgets[tracktype][rightTrackMonitor];
