@@ -1,4 +1,4 @@
-#include "RemoveCompanyHeadquarters.h"
+#include "GameCommands/Company/RemoveCompanyHeadquarters.h"
 #include "Audio/Audio.h"
 #include "Economy/Expenditures.h"
 #include "GameCommands/Buildings/RemoveBuilding.h"
@@ -37,7 +37,7 @@ namespace OpenLoco::GameCommands
                     continue;
                 }
 
-                if (!sub_431E6A(company.id(), nullptr))
+                if (!sub_431E6A(company.id()))
                 {
                     return GameCommands::kFailure;
                 }

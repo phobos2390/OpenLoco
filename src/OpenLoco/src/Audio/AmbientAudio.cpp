@@ -1,4 +1,4 @@
-#include "Audio.h"
+#include "Audio/Audio.h"
 #include "Environment.h"
 #include "Game.h"
 #include "GameStateFlags.h"
@@ -32,6 +32,9 @@ namespace OpenLoco::Audio
         constexpr int32_t _volumes[]{ -1200, -2000, -3000, -3000 };
         return _volumes[zoom];
     }
+
+    // Compiler warning work-around, wants to see a declaration.
+    void updateAmbientNoise();
 
     void updateAmbientNoise()
     {
@@ -74,12 +77,12 @@ namespace OpenLoco::Audio
                             waterCount++;
                             break;
                         }
-                        else if (elSurface->snowCoverage() && elSurface->isLast())
+                        else if (elSurface->snowCoverage() && el.isLast())
                         {
                             wildernessCount++;
                             break;
                         }
-                        else if (elSurface->baseZ() >= 64 && elSurface->isLast())
+                        else if (elSurface->baseZ() >= 64 && el.isLast())
                         {
                             wildernessCount++;
                             break;

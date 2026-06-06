@@ -1,4 +1,4 @@
-#include "ChangeCompanyColour.h"
+#include "GameCommands/Company/ChangeCompanyColour.h"
 #include "Audio/Audio.h"
 #include "GameCommands/GameCommands.h"
 #include "GameException.hpp"
@@ -63,7 +63,7 @@ namespace OpenLoco::GameCommands
         }
         else
         {
-            if (!sub_431E6A(args.companyId, nullptr))
+            if (!sub_431E6A(args.companyId))
             {
                 return GameCommands::kFailure;
             }

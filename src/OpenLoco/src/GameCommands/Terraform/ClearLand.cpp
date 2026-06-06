@@ -1,4 +1,4 @@
-#include "ClearLand.h"
+#include "GameCommands/Terraform/ClearLand.h"
 #include "Economy/Economy.h"
 #include "Economy/Expenditures.h"
 #include "GameCommands/GameCommands.h"
@@ -45,8 +45,8 @@ namespace OpenLoco::GameCommands
 
         currency32_t cost{};
         // Bind our local vars to the tile clear function
-        auto clearFunc = [pos, &removedBuildings, flags, &cost](World::TileElement& el) {
-            return TileClearance::clearWithoutDefaultCollision(el, pos, removedBuildings, flags, cost);
+        auto clearFunc = [pos, &removedBuildings, flags, &cost](World::TileElementEntry& entry) {
+            return TileClearance::clearWithoutDefaultCollision(entry, pos, removedBuildings, flags, cost);
         };
 
         auto tileHeight = World::TileManager::getHeight(pos);

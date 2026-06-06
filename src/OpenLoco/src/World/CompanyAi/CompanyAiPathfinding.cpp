@@ -1,5 +1,4 @@
-#include "CompanyAiPathfinding.h"
-#include "CompanyAi.h"
+#include "World/CompanyAi/CompanyAiPathfinding.h"
 #include "Economy/Economy.h"
 #include "GameCommands/CompanyAi/AiTrackReplacement.h"
 #include "GameCommands/Road/CreateRoad.h"
@@ -27,6 +26,7 @@
 #include "Objects/TrackObject.h"
 #include "Objects/TreeObject.h"
 #include "World/Company.h"
+#include "World/CompanyAi/CompanyAi.h"
 #include "World/Station.h"
 
 namespace OpenLoco::CompanyAi
@@ -1230,7 +1230,7 @@ namespace OpenLoco::CompanyAi
 
         // 0x0047C159
         static World::TileClearance::ClearFuncResult clearFunction(
-            World::TileElement& el,
+            World::TileElementEntry& el,
             currency32_t& totalCost,
             bool& hasLevelCrossing)
         {
@@ -1351,7 +1351,7 @@ namespace OpenLoco::CompanyAi
                 // As all level crossings will be new its always going to be currentDefaultLevelCrossingType
                 const auto levelCrossingObjId = getGameState().currentDefaultLevelCrossingType;
 
-                auto clearFunc = [&totalCost, &hasLevelCrossing](World::TileElement& el) {
+                auto clearFunc = [&totalCost, &hasLevelCrossing](World::TileElementEntry& el) {
                     return clearFunction(el, totalCost, hasLevelCrossing);
                 };
                 World::TileClearance::applyClearAtStandardHeight(roadLoc, elRoad->baseZ(), elRoad->clearZ(), World::QuarterTile(elRoad->occupiedQuarter(), 0), clearFunc);

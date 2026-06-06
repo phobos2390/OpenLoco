@@ -1,4 +1,4 @@
-#include "CreateTrackMod.h"
+#include "GameCommands/Track/CreateTrackMod.h"
 #include "Economy/Expenditures.h"
 #include "Map/TileManager.h"
 #include "Map/Track/TrackData.h"
@@ -60,7 +60,7 @@ namespace OpenLoco::GameCommands
             return kFailure;
         }
 
-        if (!sub_431E6A(elTrack->owner(), reinterpret_cast<const World::TileElement*>(elTrack)))
+        if (!sub_431E6A(elTrack->owner(), elTrack))
         {
             return kFailure;
         }

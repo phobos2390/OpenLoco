@@ -1,4 +1,4 @@
-#include "AiCreateTrackAndStation.h"
+#include "GameCommands/CompanyAi/AiCreateTrackAndStation.h"
 #include "Economy/Expenditures.h"
 #include "GameCommands/Track/CreateTrack.h"
 #include "GameCommands/Track/CreateTrainStation.h"
@@ -11,15 +11,15 @@
 namespace OpenLoco::GameCommands
 {
     // 0x004A7328
-    static World::TileClearance::ClearFuncResult clearNearbyArea(World::TileElement& el)
+    static World::TileClearance::ClearFuncResult clearNearbyArea(World::TileElementEntry& entry)
     {
-        if (el.type() == World::ElementType::tree)
+        if (entry.type() == World::ElementType::tree)
         {
             return World::TileClearance::ClearFuncResult::noCollision;
         }
-        if (el.type() == World::ElementType::building)
+        if (entry.type() == World::ElementType::building)
         {
-            auto* elBuilding = el.as<World::BuildingElement>();
+            auto* elBuilding = entry.as<World::BuildingElement>();
             if (elBuilding == nullptr)
             {
                 return World::TileClearance::ClearFuncResult::noCollision;
