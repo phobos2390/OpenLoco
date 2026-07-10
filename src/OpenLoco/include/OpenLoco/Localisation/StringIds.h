@@ -1935,9 +1935,9 @@ namespace OpenLoco::StringIds
     constexpr StringId shortcut_construction_next_tab = 2219;
     constexpr StringId shortcut_construction_previous_track_piece = 2220;
     constexpr StringId shortcut_construction_next_track_piece = 2221;
-    constexpr StringId shortcut_construction_next_left_track_piece = 2400;
-    constexpr StringId shortcut_construction_next_right_track_piece = 2401;
-    constexpr StringId shortcut_construction_set_track_piece_to_straight = 2402;
+    constexpr StringId shortcut_construction_next_left_track_piece = 5400;
+    constexpr StringId shortcut_construction_next_right_track_piece = 5401;
+    constexpr StringId shortcut_construction_set_track_piece_to_straight = 5402;
     constexpr StringId shortcut_construction_previous_slope = 2222;
     constexpr StringId shortcut_construction_next_slope = 2223;
     constexpr StringId shortcut_construction_build_at_current_pos = 2224;
