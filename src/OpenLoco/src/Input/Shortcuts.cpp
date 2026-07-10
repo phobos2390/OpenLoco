@@ -641,6 +641,33 @@ namespace OpenLoco::Input::Shortcuts
         }
     }
 
+    static void constructionNextLeftTrackPiece()
+    {
+        auto window = WindowManager::find(WindowType::construction);
+        if (window != nullptr)
+        {
+            Ui::Windows::Construction::Construction::nextLeftTrackPiece(*window);
+        }
+    }
+
+    static void constructionNextRightTrackPiece()
+    {
+        auto window = WindowManager::find(WindowType::construction);
+        if (window != nullptr)
+        {
+            Ui::Windows::Construction::Construction::nextRightTrackPiece(*window);
+        }
+    }
+
+    static void constructionSetTrackPieceToStraight()
+    {
+        auto window = WindowManager::find(WindowType::construction);
+        if (window != nullptr)
+        {
+            Ui::Windows::Construction::Construction::setTrackPieceToStraight(*window);
+        }
+    }
+
     static void constructionPreviousSlope()
     {
         auto window = WindowManager::find(WindowType::construction);
@@ -709,62 +736,65 @@ namespace OpenLoco::Input::Shortcuts
     void initialize()
     {
         // clang-format off
-        ShortcutManager::add(Shortcut::closeTopmostWindow,              StringIds::shortcut_close_topmost_window,               closeTopmostWindow,             "closeTopmostWindow",               "Backspace");
-        ShortcutManager::add(Shortcut::closeAllFloatingWindows,         StringIds::shortcut_close_all_floating_windows,         closeAllFloatingWindows,        "closeAllFloatingWindows",          "Left Shift+Backspace");
-        ShortcutManager::add(Shortcut::cancelConstructionMode,          StringIds::shortcut_cancel_construction_mode,           cancelConstructionMode,         "cancelConstructionMode",           "Escape");
-        ShortcutManager::add(Shortcut::pauseUnpauseGame,                StringIds::shortcut_pause_unpause_game,                 pauseUnpauseGame,               "pauseUnpauseGame",                 "Pause");
-        ShortcutManager::add(Shortcut::zoomViewOut,                     StringIds::shortcut_zoom_view_out,                      zoomViewOut,                    "zoomViewOut",                      "PageUp");
-        ShortcutManager::add(Shortcut::zoomViewIn,                      StringIds::shortcut_zoom_view_in,                       zoomViewIn,                     "zoomViewIn",                       "PageDown");
-        ShortcutManager::add(Shortcut::rotateView,                      StringIds::shortcut_rotate_view,                        rotateView,                     "rotateView",                       "Return");
-        ShortcutManager::add(Shortcut::rotateConstructionObject,        StringIds::shortcut_rotate_construction_object,         rotateConstructionObject,       "rotateConstructionObject",         "Z");
-        ShortcutManager::add(Shortcut::toggleUndergroundView,           StringIds::shortcut_toggle_underground_view,            toggleUndergroundView,          "toggleUndergroundView",            "1");
-        ShortcutManager::add(Shortcut::toggleSeeThroughTracks,          StringIds::shortcutSeeThroughTracks,                    toggleSeeThroughTracks,         "toggleSeeThroughTracks",           "2");
-        ShortcutManager::add(Shortcut::toggleSeeThroughRoads,           StringIds::shortcutSeeThroughRoads,                     toggleSeeThroughRoads,          "toggleSeeThroughRoads",            "3");
-        ShortcutManager::add(Shortcut::toggleSeeThroughTrees,           StringIds::shortcutSeeThroughTrees,                     toggleSeeThroughTrees,          "toggleSeeThroughTrees",            "4");
-        ShortcutManager::add(Shortcut::toggleSeeThroughBuildings,       StringIds::shortcutSeeThroughBuildings,                 toggleSeeThroughBuildings,      "toggleSeeThroughBuildings",        "5");
-        ShortcutManager::add(Shortcut::toggleSeeThroughBridges,         StringIds::shortcutSeeThroughBridges,                   toggleSeeThroughBridges,        "toggleSeeThroughBridges",          "6");
-        ShortcutManager::add(Shortcut::toggleSeeThroughScenery,         StringIds::shortcutSeeThroughScenery,                   toggleSeeThroughScenery,        "toggleSeeThroughScenery",          "7");
-        ShortcutManager::add(Shortcut::toggleHeightMarksOnLand,         StringIds::shortcut_toggle_height_marks_on_land,        toggleHeightMarksOnLand,        "toggleHeightMarksOnLand",          "8");
-        ShortcutManager::add(Shortcut::toggleHeightMarksOnTracks,       StringIds::shortcut_toggle_height_marks_on_tracks,      toggleHeightMarksOnTracks,      "toggleHeightMarksOnTracks",        "9");
-        ShortcutManager::add(Shortcut::toggleDirArrowsonTracks,         StringIds::shortcut_toggle_dir_arrows_on_tracks,        toggleDirArrowsOnTracks,        "toggleDirArrowsOnTracks",          "0");
-        ShortcutManager::add(Shortcut::adjustLand,                      StringIds::shortcut_adjust_land,                        adjustLand,                     "adjustLand",                       "L");
-        ShortcutManager::add(Shortcut::adjustWater,                     StringIds::shortcut_adjust_water,                       adjustWater,                    "adjustWater",                      "W");
-        ShortcutManager::add(Shortcut::plantTrees,                      StringIds::shortcut_plant_trees,                        plantTrees,                     "plantTrees",                       "P");
-        ShortcutManager::add(Shortcut::bulldozeArea,                    StringIds::shortcut_bulldoze_area,                      bulldozeArea,                   "bulldozeArea",                     "X");
-        ShortcutManager::add(Shortcut::buildTracks,                     StringIds::shortcut_build_tracks,                       buildTracks,                    "buildTracks",                      "T");
-        ShortcutManager::add(Shortcut::buildRoads,                      StringIds::shortcut_build_roads,                        buildRoads,                     "buildRoads",                       "R");
-        ShortcutManager::add(Shortcut::buildAirports,                   StringIds::shortcut_build_airports,                     buildAirports,                  "buildAirports",                    "A");
-        ShortcutManager::add(Shortcut::buildShipPorts,                  StringIds::shortcut_build_ship_ports,                   buildShipPorts,                 "buildShipPorts",                   "D");
-        ShortcutManager::add(Shortcut::buildNewVehicles,                StringIds::shortcut_build_new_vehicles,                 buildNewVehicles,               "buildNewVehicles",                 "N");
-        ShortcutManager::add(Shortcut::showVehiclesList,                StringIds::shortcut_show_vehicles_list,                 showVehiclesList,               "showVehiclesList",                 "V");
-        ShortcutManager::add(Shortcut::showStationsList,                StringIds::shortcut_show_stations_list,                 showStationsList,               "showStationsList",                 "S");
-        ShortcutManager::add(Shortcut::showTownsList,                   StringIds::shortcut_show_towns_list,                    showTownsList,                  "showTownsList",                    "U");
-        ShortcutManager::add(Shortcut::showIndustriesList,              StringIds::shortcut_show_industries_list,               showIndustriesList,             "showIndustriesList",               "I");
-        ShortcutManager::add(Shortcut::showMap,                         StringIds::shortcut_show_map,                           showMap,                        "showMap",                          "M");
-        ShortcutManager::add(Shortcut::showCompaniesList,               StringIds::shortcut_show_companies_list,                showCompaniesList,              "showCompaniesList",                "C");
-        ShortcutManager::add(Shortcut::showCompanyInformation,          StringIds::shortcut_show_company_information,           showCompanyInformation,         "showCompanyInformation",           "Q");
-        ShortcutManager::add(Shortcut::showFinances,                    StringIds::shortcut_show_finances,                      showFinances,                   "showFinances",                     "F");
-        ShortcutManager::add(Shortcut::showAnnouncementsList,           StringIds::shortcut_show_announcements_list,            showAnnouncementsList,          "showAnnouncementsList",            "Tab");
-        ShortcutManager::add(Shortcut::showOptionsWindow,               StringIds::shortcut_show_options_window,                showOptionsWindow,              "showOptionsWindow",                "");
-        ShortcutManager::add(Shortcut::showJukeboxWindow,               StringIds::shortcut_show_jukebox_window,                showJukeboxWindow,              "showJukeboxWindow",                "");
-        ShortcutManager::add(Shortcut::screenshot,                      StringIds::shortcut_screenshot,                         makeScreenshot,                 "makeScreenshot",                   "Left Ctrl+S");
-        ShortcutManager::add(Shortcut::toggleLastAnnouncement,          StringIds::shortcut_toggle_last_announcement,           toggleLastAnnouncement,         "toggleLastAnnouncement",           "Space");
-        ShortcutManager::add(Shortcut::sendMessage,                     StringIds::shortcut_send_message,                       sendMessage,                    "sendMessage",                      "F1");
-        ShortcutManager::add(Shortcut::maxClipIncrement,                StringIds::shortcut_max_clip_height_increment,          maxClipIncrement,               "maxClipIncrement",                 "F5");
-        ShortcutManager::add(Shortcut::maxClipDecrement,                StringIds::shortcut_max_clip_height_decrement,          maxClipDecrement,               "maxClipDecrement",                 "F6");
-        ShortcutManager::add(Shortcut::constructionPreviousTab,         StringIds::shortcut_construction_previous_tab,          constructionPreviousTab,        "constructionPreviousTab",          "");
-        ShortcutManager::add(Shortcut::constructionNextTab,             StringIds::shortcut_construction_next_tab,              constructionNextTab,            "constructionNextTab",              "");
-        ShortcutManager::add(Shortcut::constructionPreviousTrackPiece,  StringIds::shortcut_construction_previous_track_piece,  constructionPreviousTrackPiece, "constructionPreviousTrackPiece",   "");
-        ShortcutManager::add(Shortcut::constructionNextTrackPiece,      StringIds::shortcut_construction_next_track_piece,      constructionNextTrackPiece,     "constructionNextTrackPiece",       "");
-        ShortcutManager::add(Shortcut::constructionPreviousSlope,       StringIds::shortcut_construction_previous_slope,        constructionPreviousSlope,      "constructionPreviousSlope",        "");
-        ShortcutManager::add(Shortcut::constructionNextSlope,           StringIds::shortcut_construction_next_slope,            constructionNextSlope,          "constructionNextSlope",            "");
-        ShortcutManager::add(Shortcut::constructionBuildAtCurrentPos,   StringIds::shortcut_construction_build_at_current_pos,  constructionBuildAtCurrentPos,  "constructionBuildAtCurrentPos",    "");
-        ShortcutManager::add(Shortcut::constructionRemoveAtCurrentPos,  StringIds::shortcut_construction_remove_at_current_pos, constructionRemoveAtCurrentPos, "constructionRemoveAtCurrentPos",   "");
-        ShortcutManager::add(Shortcut::constructionSelectPosition,      StringIds::shortcut_construction_select_position,       constructionSelectPosition,     "constructionSelectPosition",       "");
-        ShortcutManager::add(Shortcut::gameSpeedNormal,                 StringIds::shortcut_game_speed_normal,                  gameSpeedNormal,                "gameSpeedNormal",                  "");
-        ShortcutManager::add(Shortcut::gameSpeedFastForward,            StringIds::shortcut_game_speed_fast_forward,            gameSpeedFastForward,           "gameSpeedFastForward",             "");
-        ShortcutManager::add(Shortcut::gameSpeedExtraFastForward,       StringIds::shortcut_game_speed_extra_fast_forward,      gameSpeedExtraFastForward,      "gameSpeedExtraFastForward",        "");
-        ShortcutManager::add(Shortcut::openDebugWindow,                 StringIds::empty,                                       openDebugWindow,                "openDebugWindow",                  "F10");
+        ShortcutManager::add(Shortcut::closeTopmostWindow,                  StringIds::shortcut_close_topmost_window,                       closeTopmostWindow,                      "closeTopmostWindow",                  "Backspace");
+        ShortcutManager::add(Shortcut::closeAllFloatingWindows,             StringIds::shortcut_close_all_floating_windows,                 closeAllFloatingWindows,                 "closeAllFloatingWindows",             "Left Shift+Backspace");
+        ShortcutManager::add(Shortcut::cancelConstructionMode,              StringIds::shortcut_cancel_construction_mode,                   cancelConstructionMode,                  "cancelConstructionMode",              "Escape");
+        ShortcutManager::add(Shortcut::pauseUnpauseGame,                    StringIds::shortcut_pause_unpause_game,                         pauseUnpauseGame,                        "pauseUnpauseGame",                    "Pause");
+        ShortcutManager::add(Shortcut::zoomViewOut,                         StringIds::shortcut_zoom_view_out,                              zoomViewOut,                             "zoomViewOut",                         "PageUp");
+        ShortcutManager::add(Shortcut::zoomViewIn,                          StringIds::shortcut_zoom_view_in,                               zoomViewIn,                              "zoomViewIn",                          "PageDown");
+        ShortcutManager::add(Shortcut::rotateView,                          StringIds::shortcut_rotate_view,                                rotateView,                              "rotateView",                          "Return");
+        ShortcutManager::add(Shortcut::rotateConstructionObject,            StringIds::shortcut_rotate_construction_object,                 rotateConstructionObject,                "rotateConstructionObject",            "Z");
+        ShortcutManager::add(Shortcut::toggleUndergroundView,               StringIds::shortcut_toggle_underground_view,                    toggleUndergroundView,                   "toggleUndergroundView",               "1");
+        ShortcutManager::add(Shortcut::toggleSeeThroughTracks,              StringIds::shortcutSeeThroughTracks,                            toggleSeeThroughTracks,                  "toggleSeeThroughTracks",              "2");
+        ShortcutManager::add(Shortcut::toggleSeeThroughRoads,               StringIds::shortcutSeeThroughRoads,                             toggleSeeThroughRoads,                   "toggleSeeThroughRoads",               "3");
+        ShortcutManager::add(Shortcut::toggleSeeThroughTrees,               StringIds::shortcutSeeThroughTrees,                             toggleSeeThroughTrees,                   "toggleSeeThroughTrees",               "4");
+        ShortcutManager::add(Shortcut::toggleSeeThroughBuildings,           StringIds::shortcutSeeThroughBuildings,                         toggleSeeThroughBuildings,               "toggleSeeThroughBuildings",           "5");
+        ShortcutManager::add(Shortcut::toggleSeeThroughBridges,             StringIds::shortcutSeeThroughBridges,                           toggleSeeThroughBridges,                 "toggleSeeThroughBridges",             "6");
+        ShortcutManager::add(Shortcut::toggleSeeThroughScenery,             StringIds::shortcutSeeThroughScenery,                           toggleSeeThroughScenery,                 "toggleSeeThroughScenery",             "7");
+        ShortcutManager::add(Shortcut::toggleHeightMarksOnLand,             StringIds::shortcut_toggle_height_marks_on_land,                toggleHeightMarksOnLand,                 "toggleHeightMarksOnLand",             "8");
+        ShortcutManager::add(Shortcut::toggleHeightMarksOnTracks,           StringIds::shortcut_toggle_height_marks_on_tracks,              toggleHeightMarksOnTracks,               "toggleHeightMarksOnTracks",           "9");
+        ShortcutManager::add(Shortcut::toggleDirArrowsonTracks,             StringIds::shortcut_toggle_dir_arrows_on_tracks,                toggleDirArrowsOnTracks,                 "toggleDirArrowsOnTracks",             "0");
+        ShortcutManager::add(Shortcut::adjustLand,                          StringIds::shortcut_adjust_land,                                adjustLand,                              "adjustLand",                          "L");
+        ShortcutManager::add(Shortcut::adjustWater,                         StringIds::shortcut_adjust_water,                               adjustWater,                             "adjustWater",                         "W");
+        ShortcutManager::add(Shortcut::plantTrees,                          StringIds::shortcut_plant_trees,                                plantTrees,                              "plantTrees",                          "P");
+        ShortcutManager::add(Shortcut::bulldozeArea,                        StringIds::shortcut_bulldoze_area,                              bulldozeArea,                            "bulldozeArea",                        "X");
+        ShortcutManager::add(Shortcut::buildTracks,                         StringIds::shortcut_build_tracks,                               buildTracks,                             "buildTracks",                         "T");
+        ShortcutManager::add(Shortcut::buildRoads,                          StringIds::shortcut_build_roads,                                buildRoads,                              "buildRoads",                          "R");
+        ShortcutManager::add(Shortcut::buildAirports,                       StringIds::shortcut_build_airports,                             buildAirports,                           "buildAirports",                       "A");
+        ShortcutManager::add(Shortcut::buildShipPorts,                      StringIds::shortcut_build_ship_ports,                           buildShipPorts,                          "buildShipPorts",                      "D");
+        ShortcutManager::add(Shortcut::buildNewVehicles,                    StringIds::shortcut_build_new_vehicles,                         buildNewVehicles,                        "buildNewVehicles",                    "N");
+        ShortcutManager::add(Shortcut::showVehiclesList,                    StringIds::shortcut_show_vehicles_list,                         showVehiclesList,                        "showVehiclesList",                    "V");
+        ShortcutManager::add(Shortcut::showStationsList,                    StringIds::shortcut_show_stations_list,                         showStationsList,                        "showStationsList",                    "S");
+        ShortcutManager::add(Shortcut::showTownsList,                       StringIds::shortcut_show_towns_list,                            showTownsList,                           "showTownsList",                       "U");
+        ShortcutManager::add(Shortcut::showIndustriesList,                  StringIds::shortcut_show_industries_list,                       showIndustriesList,                      "showIndustriesList",                  "I");
+        ShortcutManager::add(Shortcut::showMap,                             StringIds::shortcut_show_map,                                   showMap,                                 "showMap",                             "M");
+        ShortcutManager::add(Shortcut::showCompaniesList,                   StringIds::shortcut_show_companies_list,                        showCompaniesList,                       "showCompaniesList",                   "C");
+        ShortcutManager::add(Shortcut::showCompanyInformation,              StringIds::shortcut_show_company_information,                   showCompanyInformation,                  "showCompanyInformation",              "Q");
+        ShortcutManager::add(Shortcut::showFinances,                        StringIds::shortcut_show_finances,                              showFinances,                            "showFinances",                        "F");
+        ShortcutManager::add(Shortcut::showAnnouncementsList,               StringIds::shortcut_show_announcements_list,                    showAnnouncementsList,                   "showAnnouncementsList",               "Tab");
+        ShortcutManager::add(Shortcut::showOptionsWindow,                   StringIds::shortcut_show_options_window,                        showOptionsWindow,                       "showOptionsWindow",                   "");
+        ShortcutManager::add(Shortcut::showJukeboxWindow,                   StringIds::shortcut_show_jukebox_window,                        showJukeboxWindow,                       "showJukeboxWindow",                   "");
+        ShortcutManager::add(Shortcut::screenshot,                          StringIds::shortcut_screenshot,                                 makeScreenshot,                          "makeScreenshot",                      "Left Ctrl+S");
+        ShortcutManager::add(Shortcut::toggleLastAnnouncement,              StringIds::shortcut_toggle_last_announcement,                   toggleLastAnnouncement,                  "toggleLastAnnouncement",              "Space");
+        ShortcutManager::add(Shortcut::sendMessage,                         StringIds::shortcut_send_message,                               sendMessage,                             "sendMessage",                         "F1");
+        ShortcutManager::add(Shortcut::maxClipIncrement,                    StringIds::shortcut_max_clip_height_increment,                  maxClipIncrement,                        "maxClipIncrement",                    "F5");
+        ShortcutManager::add(Shortcut::maxClipDecrement,                    StringIds::shortcut_max_clip_height_decrement,                  maxClipDecrement,                        "maxClipDecrement",                    "F6");
+        ShortcutManager::add(Shortcut::constructionPreviousTab,             StringIds::shortcut_construction_previous_tab,                  constructionPreviousTab,                 "constructionPreviousTab",             "");
+        ShortcutManager::add(Shortcut::constructionNextTab,                 StringIds::shortcut_construction_next_tab,                      constructionNextTab,                     "constructionNextTab",                 "");
+        ShortcutManager::add(Shortcut::constructionPreviousTrackPiece,      StringIds::shortcut_construction_previous_track_piece,          constructionPreviousTrackPiece,          "constructionPreviousTrackPiece",      "");
+        ShortcutManager::add(Shortcut::constructionNextTrackPiece,          StringIds::shortcut_construction_next_track_piece,              constructionNextTrackPiece,              "constructionNextTrackPiece",          "");
+        ShortcutManager::add(Shortcut::constructionNextLeftTrackPiece,      StringIds::shortcut_construction_next_left_track_piece,         constructionNextLeftTrackPiece,          "constructionNextLeftTrackPiece",      "");
+        ShortcutManager::add(Shortcut::constructionNextRightTrackPiece,     StringIds::shortcut_construction_next_right_track_piece,        constructionNextRightTrackPiece,         "constructionNextRightTrackPiece",     "");
+        ShortcutManager::add(Shortcut::constructionSetTrackPieceToStraight, StringIds::shortcut_construction_set_track_piece_to_straight,   constructionSetTrackPieceToStraight,     "constructionSetTrackPieceToStraight", "");
+        ShortcutManager::add(Shortcut::constructionPreviousSlope,           StringIds::shortcut_construction_previous_slope,                constructionPreviousSlope,               "constructionPreviousSlope",           "");
+        ShortcutManager::add(Shortcut::constructionNextSlope,               StringIds::shortcut_construction_next_slope,                    constructionNextSlope,                   "constructionNextSlope",               "");
+        ShortcutManager::add(Shortcut::constructionBuildAtCurrentPos,       StringIds::shortcut_construction_build_at_current_pos,          constructionBuildAtCurrentPos,           "constructionBuildAtCurrentPos",       "");
+        ShortcutManager::add(Shortcut::constructionRemoveAtCurrentPos,      StringIds::shortcut_construction_remove_at_current_pos,         constructionRemoveAtCurrentPos,          "constructionRemoveAtCurrentPos",      "");
+        ShortcutManager::add(Shortcut::constructionSelectPosition,          StringIds::shortcut_construction_select_position,               constructionSelectPosition,              "constructionSelectPosition",          "");
+        ShortcutManager::add(Shortcut::gameSpeedNormal,                     StringIds::shortcut_game_speed_normal,                          gameSpeedNormal,                         "gameSpeedNormal",                     "");
+        ShortcutManager::add(Shortcut::gameSpeedFastForward,                StringIds::shortcut_game_speed_fast_forward,                    gameSpeedFastForward,                    "gameSpeedFastForward",                "");
+        ShortcutManager::add(Shortcut::gameSpeedExtraFastForward,           StringIds::shortcut_game_speed_extra_fast_forward,              gameSpeedExtraFastForward,               "gameSpeedExtraFastForward",           "");
+        ShortcutManager::add(Shortcut::openDebugWindow,                     StringIds::empty,                                               openDebugWindow,                         "openDebugWindow",                     "F10");
         // clang-format on
     }
 }
