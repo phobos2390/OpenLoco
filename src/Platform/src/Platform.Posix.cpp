@@ -24,6 +24,10 @@ namespace OpenLoco::Platform
 {
     static constexpr auto kSingleInstanceMutexName = "OpenLoco.lock";
 
+    void initialise()
+    {
+    }
+
     uint32_t getTime()
     {
         struct timespec spec;
@@ -106,7 +110,7 @@ namespace OpenLoco::Platform
     {
         std::string input;
         std::cout << "Type your Locomotion path: ";
-        std::cin >> input;
+        std::getline(std::cin, input);
 
         auto path = fs::canonical(input);
         return path;

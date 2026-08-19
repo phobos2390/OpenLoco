@@ -1,7 +1,6 @@
 #include "GameCommands/General/TogglePause.h"
 #include "Audio/Audio.h"
 #include "GameCommands/GameCommands.h"
-#include "GameException.hpp"
 #include "SceneManager.h"
 #include "Ui/WindowManager.h"
 #include "Ui/WindowType.h"
@@ -9,9 +8,9 @@
 namespace OpenLoco::GameCommands
 {
     // 0x00431E32
-    static uint32_t togglePause(uint8_t flags)
+    static uint32_t togglePause(Flags flags)
     {
-        if ((flags & Flags::apply) == 0)
+        if (!hasFlags(flags, Flags::apply))
         {
             return 0;
         }
@@ -30,7 +29,7 @@ namespace OpenLoco::GameCommands
         return 0;
     }
 
-    void togglePause(registers& regs, const uint8_t flags)
+    void togglePause(registers& regs, const Flags flags)
     {
         regs.ebx = togglePause(flags);
     }
